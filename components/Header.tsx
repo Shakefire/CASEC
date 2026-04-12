@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useMockAuth } from "@/lib/auth";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -20,6 +20,7 @@ export default function Header() {
   const pathname = usePathname();
   const { role, isLoggedIn, setRole, logout } = useMockAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href;
 
@@ -36,39 +37,43 @@ export default function Header() {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-2 rounded text-sm transition-colors ${
-                isActive(link.href)
-                  ? "bg-white/15 text-white font-semibold"
-                  : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isLoggedIn && (
-            <>
-              {role === "admin" && (
-                <Link
-                  href="/admin"
-                  className={`px-3 py-2 rounded text-sm transition-colors ${
-                    isActive("/admin")
-                      ? "bg-white/15 text-white font-semibold"
-                      : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  Admin
-                </Link>
-              )}
-            </>
-          )}
-        </nav>
-
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden inline-flex items-center justify-center p-2 rounded border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`px-3 py-2 rounded text-sm transition-colors ${
+                  isActive(link.href)
+                    ? "bg-white/15 text-white font-semibold"
+                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isLoggedIn && role === "admin" && (
+              <Link
+                href="/admin"
+                className={`px-3 py-2 rounded text-sm transition-colors ${
+                  isActive("/admin")
+                    ? "bg-white/15 text-white font-semibold"
+                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+          </div>
           {isLoggedIn ? (
             <div className="relative">
               <button
@@ -132,6 +137,40 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#0b5f4f] border-t border-white/10">
+          <nav className="space-y-1 px-4 py-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block rounded px-3 py-2 text-sm transition-colors ${
+                  isActive(link.href)
+                    ? "bg-white/15 text-white font-semibold"
+                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isLoggedIn && role === "admin" && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block rounded px-3 py-2 text-sm transition-colors ${
+                  isActive("/admin")
+                    ? "bg-white/15 text-white font-semibold"
+                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
