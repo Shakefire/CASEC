@@ -37,7 +37,7 @@ export default function ResourcesPage() {
       "Motivated graduate with strong analytical skills and a passion for turning data into strategic insights.",
     skills: "Data analysis · Excel · SQL · Power BI · Team collaboration",
     experience:
-      "Intern, Data Support | OnlineUniversity Career Services\n• Managed student application tracking and created weekly performance dashboards.",
+      "Intern, Data Support | Online University Career Services\n• Managed student application tracking and created weekly performance dashboards.",
   });
 
   const sectionCopy = {
@@ -532,7 +532,7 @@ export default function ResourcesPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">Ready to Build Your Resume?</h3>
-                  <p className="text-sm text-gray-500">Join thousands of students from OnlineUniversity who have built professional resumes with CASEC.</p>
+                  <p className="text-sm text-gray-500">Join thousands of students from Online University who have built professional resumes with CASEC.</p>
                 </div>
                 <a
                   href="https://www.open-resume.com/resume-import"

@@ -12,6 +12,8 @@ const navLinks = [
   { label: "Jobs", href: "/jobs" },
   { label: "Events", href: "/events" },
   { label: "Resources", href: "/resources" },
+  { label: "Alumni Connect", href: "/alumni" },
+  { label: "RUN-LAS", href: "/cv-builder" },
 ];
 
 export default function Header() {
@@ -30,7 +32,7 @@ export default function Header() {
           </div>
           <div>
             <p className="text-white font-bold text-sm">Career Services Centre</p>
-            <p className="text-[#d1fae5] text-xs">OnlineUniversity, Nigeria</p>
+            <p className="text-[#d1fae5] text-xs">Online University, Nigeria</p>
           </div>
         </Link>
 
@@ -50,16 +52,6 @@ export default function Header() {
           ))}
           {isLoggedIn && (
             <>
-              <Link
-                href="/alumni"
-                className={`px-3 py-2 rounded text-sm transition-colors ${
-                  isActive("/alumni")
-                    ? "bg-white/15 text-white font-semibold"
-                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                Alumni Connect
-              </Link>
               {role === "admin" && (
                 <Link
                   href="/admin"
@@ -70,18 +62,6 @@ export default function Header() {
                   }`}
                 >
                   Admin
-                </Link>
-              )}
-              {role === "employer" && (
-                <Link
-                  href="/cv-builder"
-                  className={`px-3 py-2 rounded text-sm transition-colors ${
-                    isActive("/cv-builder")
-                      ? "bg-white/15 text-white font-semibold"
-                      : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  RUN-LAS
                 </Link>
               )}
             </>
