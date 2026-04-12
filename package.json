@@ -1,0 +1,28 @@
+{
+  "name": "casec-career-portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "clsx": "2.1.1",
+    "lucide-react": "^1.8.0",
+    "next": "^16.2.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "tailwind-merge": "3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.17",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "10.4.19",
+    "postcss": "8.4.36",
+    "tailwindcss": "3.4.4",
+    "typescript": "5.9.3"
+  }
+}
