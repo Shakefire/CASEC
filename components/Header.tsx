@@ -33,7 +33,7 @@ export default function Header() {
           </div>
           <div>
             <p className="text-white font-bold text-sm">Career Services Centre</p>
-            <p className="text-[#d1fae5] text-xs">Online University, Nigeria</p>
+            <p className="text-[#d1fae5] text-xs">University, Nigeria, Nigeria</p>
           </div>
         </Link>
 

@@ -16,7 +16,7 @@ export default function AdminOverviewPage() {
 
   return (
     <PrivateRoute allowedRoles={["admin"]}>
-      <DashboardLayout role="admin" pageTitle="Dashboard Overview" pageSubtitle="Career Services Centre – Online University" userName="Admin">
+      <DashboardLayout role="admin" pageTitle="Dashboard Overview" pageSubtitle="Career Services Centre – University, Nigeria" userName="Admin">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
           <StatCard label="Total Opportunities" value={totalOpportunities} icon={<span className="text-[#1a2e4a]">📌</span>} note={`${activeOpportunities} currently active`} />
           <StatCard label="Upcoming Events" value={totalEvents} icon={<span className="text-[#1a2e4a]">📅</span>} />

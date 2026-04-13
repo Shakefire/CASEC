@@ -100,7 +100,7 @@ const successStories = [
     title: "From NAUB to Google Software Engineer",
     author: "Sarah Johnson",
     category: "Tech",
-    excerpt: "My journey from Online University to becoming a software engineer at Google involved consistent learning, networking, and taking calculated risks.",
+    excerpt: "My journey from University, Nigeria to becoming a software engineer at Google involved consistent learning, networking, and taking calculated risks.",
     fullStory: "Starting with a basic computer science degree, I taught myself advanced programming concepts through online courses and personal projects. The key was building a strong portfolio and networking with alumni who guided me through the interview process.",
     image: "/images/stories/sarah-google.jpg",
     achievements: ["Google L4 Engineer", "Published ML research", "Mentored 20+ students"],
@@ -202,7 +202,7 @@ export default function AlumniPage() {
               Connect with Graduates Building Careers Worldwide
             </h1>
             <p className="text-xl text-emerald-100 max-w-2xl mx-auto leading-relaxed animate-fade-in-up animation-delay-400">
-              Discover success stories, find mentors, and build your professional network with Online University alumni.
+              Discover success stories, find mentors, and build your professional network with University, Nigeria alumni.
             </p>
           </div>
         </div>
@@ -471,7 +471,7 @@ export default function AlumniPage() {
                   <div className="text-sm text-[#097969] font-medium uppercase tracking-wide">Tech Success</div>
                   <h3 className="text-3xl font-bold text-gray-900">From NAUB to Google Software Engineer</h3>
                   <p className="text-lg text-gray-600 leading-relaxed">
-                    Sarah's journey from Online University to becoming a software engineer at Google involved
+                    Sarah's journey from University, Nigeria to becoming a software engineer at Google involved
                     consistent learning, networking, and taking calculated risks.
                   </p>
                   <div className="flex items-center gap-4">
