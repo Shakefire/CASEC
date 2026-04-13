@@ -1,7 +1,10 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { opportunities, events } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import JobCard from "@/components/ui/JobCard";
 import EventCard from "@/components/ui/EventCard";
 import { Users, Monitor, CheckCircle, BookOpen, Calendar, MapPin } from "lucide-react";
@@ -63,6 +66,63 @@ const heroImages = [
 ];
 
 export default function HomePage() {
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        console.log("HomePage: Starting data fetch...");
+        
+        // Fetch opportunities
+        const { data: opps, error: oppsError } = await supabase
+          .from("opportunities")
+          .select("*")
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (oppsError) {
+          console.error("HomePage: Supabase opportunities error:", oppsError);
+          setError("Failed to load opportunities.");
+        } else if (opps) {
+          setOpportunities((opps || []).map((o: any) => ({
+            id: o.id, title: o.title, type: o.type, createdAt: o.created_at,
+          })));
+        }
+
+        // Fetch events
+        const { data: evts, error: evtsError } = await supabase
+          .from("events")
+          .select("*")
+          .eq("is_past", false)
+          .order("date", { ascending: true })
+          .limit(3);
+
+        if (evtsError) {
+          console.error("HomePage: Supabase events error:", evtsError);
+          setError("Failed to load events.");
+        } else if (evts) {
+          setEvents((evts || []).map((e: any) => ({
+            id: e.id, title: e.title, date: e.date, location: e.location, description: e.description,
+          })));
+        }
+      } catch (err: any) {
+        console.error("HomePage: Data fetch crash:", err);
+        setError(err.message || "An unexpected error occurred.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (error && opportunities.length === 0 && events.length === 0) {
+    console.log("HomePage: Rendering error state:", error);
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -446,10 +506,16 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-[#097969]/20" />
                     <div className="absolute top-3 right-3 bg-white text-[#097969] rounded-full w-14 h-14 flex flex-col items-center justify-center font-bold text-xs">
-                      <div>{event.date.split(" ")[1]}</div>
-                      <div className="text-[10px]">
-                        {event.date.split(" ")[0].slice(0, 3)}
-                      </div>
+                      {event.date ? (
+                        <>
+                          <div>{new Date(event.date).getDate()}</div>
+                          <div className="text-[10px]">
+                            {new Date(event.date).toLocaleString("en-US", { month: "short" })}
+                          </div>
+                        </>
+                      ) : (
+                        <div>TBD</div>
+                      )}
                     </div>
                   </div>
 

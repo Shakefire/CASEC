@@ -1,15 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { opportunities } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import { Search, MapPin, Filter, X, Heart, Check, Clock, AlertCircle, Zap } from "lucide-react";
 
+interface Opportunity {
+  id: string;
+  title: string;
+  description: string;
+  type: "job" | "internship" | "scholarship";
+  deadline: string;
+  postedByName: string;
+  status: "active" | "closed";
+  createdAt: string;
+  location?: string;
+  requirements?: string[];
+  eligibility?: string[];
+  verified?: boolean;
+}
+
 const getDeadlineStatus = (deadline: string) => {
+  if (!deadline) return { status: "open", label: "Ongoing", color: "green" };
   const today = new Date();
   const deadlineDate = new Date(deadline);
+  
+  if (isNaN(deadlineDate.getTime())) {
+    return { status: "open", label: "Ongoing", color: "green" };
+  }
+  
   const daysUntil = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   if (daysUntil < 0) return { status: "closed", label: "Closed", color: "red" };
@@ -18,13 +39,14 @@ const getDeadlineStatus = (deadline: string) => {
   return { status: "open", label: "Open", color: "green" };
 };
 
-const typeColors = {
+const typeColors: Record<string, { bg: string; text: string; label: string }> = {
   job: { bg: "#dbeafe", text: "#0284c7", label: "Job" },
   internship: { bg: "#dcfce7", text: "#16a34a", label: "Internship" },
   scholarship: { bg: "#f3e8ff", text: "#a855f7", label: "Scholarship" },
 };
 
 export default function JobsPage() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -33,6 +55,50 @@ export default function JobsPage() {
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchOpportunities() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("opportunities")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (fetchError) {
+          console.error("Error fetching opportunities:", fetchError);
+          setError("Failed to load opportunities. Please try again later.");
+          return;
+        }
+
+        const mapped: Opportunity[] = (data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          type: row.type,
+          deadline: row.deadline,
+          postedByName: row.posted_by_name || "Unknown",
+          status: row.status,
+          createdAt: row.created_at,
+          location: row.location,
+          requirements: row.requirements,
+          eligibility: row.eligibility,
+          verified: row.verified,
+        }));
+
+        setOpportunities(mapped);
+      } catch (err: any) {
+        console.error("JobsPage: Unexpected crash:", err);
+        setError("An unexpected error occurred.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchOpportunities();
+  }, []);
 
   // Get unique values for filters
   const locations = Array.from(new Set(opportunities.map((opp) => opp.location).filter(Boolean))) as string[];
@@ -62,7 +128,8 @@ export default function JobsPage() {
     }
 
     return filtered;
-  }, [searchQuery, selectedType, selectedLocation, selectedCompany, sortBy]);
+  }, [opportunities, searchQuery, selectedType, selectedLocation, selectedCompany, sortBy]);
+
 
   const toggleSaveJob = (jobId: string) => {
     const newSaved = new Set(savedJobs);
@@ -90,7 +157,23 @@ export default function JobsPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Search & Filter Bar */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#097969]"></div>
+            <p className="mt-4 text-gray-600 font-medium font-outfit">Finding the best opportunities for you...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-8 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5" />
+            <p className="font-outfit">{error}</p>
+          </div>
+        )}
+
+        {!isLoading && (
+          <>
+            {/* Search & Filter Bar */}
         <div className="mb-8 space-y-4">
           {/* Search */}
           <div className="flex gap-2">
@@ -249,6 +332,13 @@ export default function JobsPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {filteredOpportunities.length === 0 && (
+              <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                <Search size={48} className="mx-auto text-slate-300 mb-4" />
+                <h3 className="text-lg font-bold text-slate-900 mb-1">No opportunities found</h3>
+                <p className="text-slate-500">Try adjusting your filters or search terms to see more results.</p>
+              </div>
+            )}
             {filteredOpportunities.map((opp) => {
               const deadline = getDeadlineStatus(opp.deadline);
               const isSaved = savedJobs.has(opp.id);
@@ -366,6 +456,8 @@ export default function JobsPage() {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </main>
 

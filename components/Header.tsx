@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { useMockAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { ChevronDown, Menu, X } from "lucide-react";
 
 const navLinks = [
@@ -18,7 +18,8 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { role, isLoggedIn, setRole, logout } = useMockAuth();
+  const { role, user, signOut } = useAuth();
+  const isLoggedIn = !!user;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -87,37 +88,31 @@ export default function Header() {
 
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <button
-                    onClick={() => {
-                      setRole("student");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Switch to Student
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRole("employer");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Switch to Employer
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRole("admin");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Switch to Admin
-                  </button>
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-xs text-gray-400 font-semibold uppercase">Logged in as</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{user?.email}</p>
+                  </div>
+                  
+                  {role === 'admin' && (
+                    <Link href="/admin" className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  {role === 'employer' && (
+                    <Link href="/employer" className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      Employer Dashboard
+                    </Link>
+                  )}
+                  {role === 'student' && (
+                    <Link href="/student" className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      My Profile
+                    </Link>
+                  )}
+
                   <hr className="my-1 border-gray-200" />
                   <button
                     onClick={() => {
-                      logout();
+                      signOut();
                       setIsDropdownOpen(false);
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"

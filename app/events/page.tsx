@@ -1,15 +1,45 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { events } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import { Search, MapPin, Filter, X, Heart, Clock, Users, BookmarkCheck, AlertCircle, Calendar, Star, Play, Image as ImageIcon, FileText } from "lucide-react";
 
+interface EventItem {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  location: string;
+  createdAt: string;
+  category?: string;
+  eventType?: string;
+  capacity?: number;
+  registered?: number;
+  organizer?: string;
+  highlights?: string[];
+  isPast?: boolean;
+  actualAttendance?: number;
+  recordingUrl?: string;
+  summary?: string;
+  feedbackRating?: number;
+  speakers?: string[];
+  topics?: string[];
+  outcomes?: string[];
+  photoGallery?: string[];
+}
+
 const getEventStatus = (eventDate: string) => {
+  if (!eventDate) return { status: "upcoming", label: "TBD", color: "green" };
   const today = new Date();
   const eventDateObj = new Date(eventDate);
+  
+  if (isNaN(eventDateObj.getTime())) {
+    return { status: "upcoming", label: "TBD", color: "green" };
+  }
+  
   const daysUntil = Math.ceil((eventDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   if (daysUntil < 0) return { status: "past", label: "Past Event", color: "slate" };
@@ -33,6 +63,7 @@ const eventTypeLabels = {
 };
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -43,6 +74,59 @@ export default function EventsPage() {
   const [savedEvents, setSavedEvents] = useState<Set<string>>(new Set());
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("events")
+          .select("*")
+          .order("date", { ascending: false });
+
+        if (fetchError) {
+          console.error("Error fetching events:", fetchError);
+          setError("Failed to load events. Please try again later.");
+          return;
+        }
+
+        const mapped: EventItem[] = (data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          date: row.date,
+          description: row.description,
+          location: row.location,
+          createdAt: row.created_at,
+          category: row.category,
+          eventType: row.event_type,
+          capacity: row.capacity,
+          registered: row.registered,
+          organizer: row.organizer,
+          highlights: row.highlights,
+          isPast: row.is_past,
+          actualAttendance: row.actual_attendance,
+          recordingUrl: row.recording_url,
+          summary: row.summary,
+          feedbackRating: row.feedback_rating,
+          speakers: row.speakers,
+          topics: row.topics,
+          outcomes: row.outcomes,
+          photoGallery: row.photo_gallery,
+        }));
+
+        setEvents(mapped);
+      } catch (err: any) {
+        console.error("EventsPage: Unexpected crash:", err);
+        setError("An unexpected error occurred.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
 
   // Separate upcoming and past events
   const upcomingEvents = events.filter((evt) => !evt.isPast);
@@ -94,7 +178,7 @@ export default function EventsPage() {
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedLocation, selectedEventType, selectedYear, sortBy, activeTab]);
+  }, [events, searchQuery, selectedCategory, selectedLocation, selectedEventType, selectedYear, sortBy, activeTab]);
 
   const toggleSaveEvent = (eventId: string) => {
     const newSaved = new Set(savedEvents);
@@ -122,7 +206,23 @@ export default function EventsPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Tab Navigation */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#097969]"></div>
+            <p className="mt-4 text-gray-600 font-medium">Discovering latest events...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-8 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!isLoading && (
+          <>
+            {/* Tab Navigation */}
         <div className="flex gap-2 mb-8 border-b border-slate-200">
           <button
             onClick={() => setActiveTab("upcoming")}
@@ -740,9 +840,11 @@ export default function EventsPage() {
                 })}
               </div>
             )}
-          </>
-        )}
-      </main>
+            </>
+          )}
+        </>
+      )}
+    </main>
 
       {/* Event Detail Modal */}
       {selectedEventData && (

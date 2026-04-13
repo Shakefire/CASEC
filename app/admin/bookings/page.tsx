@@ -1,158 +1,153 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import PrivateRoute from "@/components/PrivateRoute";
-import Table from "@/components/tables/Table";
-import Modal from "@/components/forms/Modal";
-import StatusBadge from "@/components/dashboard/StatusBadge";
-import Toast from "@/components/Toast";
-import { bookingRequests } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { CheckCircle, Clock, XCircle } from "lucide-react";
+import Table, { Column } from "@/components/ui/Table";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { supabase } from "@/lib/supabase";
 
-type BookingRecord = {
+interface Booking {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  service: string;
-  date: string;
-  purpose: string;
-  status: "pending" | "approved" | "cancelled";
-};
-
-const initialBookings: BookingRecord[] = bookingRequests.map((booking) => ({
-  id: booking.id,
-  name: booking.name,
-  email: booking.email,
-  phone: booking.phone,
-  service: booking.purpose,
-  date: booking.date,
-  purpose: booking.purpose,
-  status: booking.status,
-}));
+  user_id: string;
+  type: string;
+  status: string;
+  details: string | null;
+  created_at: string;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+  } | null;
+}
 
 export default function AdminBookingsPage() {
-  const [bookings, setBookings] = useState<BookingRecord[]>(initialBookings);
-  const [selectedBooking, setSelectedBooking] = useState<BookingRecord | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"all" | BookingRecord["status"]>("all");
-  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [data, setData] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  const filteredBookings = useMemo(
-    () => (statusFilter === "all" ? bookings : bookings.filter((booking) => booking.status === statusFilter)),
-    [bookings, statusFilter]
-  );
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
-  const handleApprove = (id: string) => {
-    setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: "approved" } : booking)));
-    setNotification({ message: "Booking approved successfully.", type: "success" });
-  };
+  async function fetchBookings() {
+    setLoading(true);
+    const { data: bkn, error } = await supabase
+      .from("bookings")
+      .select("*, profiles(first_name, last_name, email)")
+      .order("created_at", { ascending: false });
 
-  const handleCancel = (id: string) => {
-    setBookings((prev) => prev.map((booking) => (booking.id === id ? { ...booking, status: "cancelled" } : booking)));
-    setNotification({ message: "Booking cancelled successfully.", type: "success" });
-  };
+    if (error) {
+      console.error("❌ BOOKINGS FETCH ERROR: " + (error.message || error));
+    } else {
+      setData(bkn as any || []);
+    }
+    setLoading(false);
+  }
 
-  const handleViewDetails = (booking: BookingRecord) => {
-    setSelectedBooking(booking);
-    setIsDetailsOpen(true);
-  };
+  async function updateStatus(id: string, status: string) {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status })
+      .eq("id", id);
+    
+    if (error) {
+      alert("Error updating booking: " + error.message);
+    } else {
+      fetchBookings();
+    }
+  }
 
-  const columns = useMemo(
-    () => [
-      { key: "name", header: "User Name", render: (row: BookingRecord) => <span className="font-medium text-slate-800">{row.name}</span> },
-      { key: "service", header: "Service", render: (row: BookingRecord) => <span className="text-slate-600">{row.service}</span> },
-      { key: "date", header: "Date", render: (row: BookingRecord) => <span>{row.date}</span> },
-      {
-        key: "status",
-        header: "Status",
-        render: (row: BookingRecord) => <StatusBadge status={row.status} />,
-      },
-      {
-        key: "actions",
-        header: "Actions",
-        render: (row: BookingRecord) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => handleViewDetails(row)} className="text-sm px-3 py-2 bg-slate-100 rounded text-slate-700 hover:bg-slate-200 transition-colors">
-              View
+  const filtered =
+    filterStatus === "all" ? data : data.filter((b) => b.status === filterStatus);
+
+  const columns: Column<Booking>[] = [
+    {
+      key: "name",
+      header: "User",
+      render: (row) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-800">
+            {row.profiles?.first_name} {row.profiles?.last_name}
+          </span>
+          <span className="text-xs text-gray-400">{row.profiles?.email}</span>
+        </div>
+      ),
+    },
+    { key: "type", header: "Service Type", render: (row) => <span className="text-gray-600">{row.type}</span> },
+    { key: "created_at", header: "Date", render: (row) => <span className="text-gray-600">{new Date(row.created_at).toLocaleDateString()}</span> },
+    {
+      key: "status",
+      header: "Status",
+      render: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (row) =>
+        row.status === "pending" ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => updateStatus(row.id, "approved")}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-green-300 rounded text-green-700 hover:bg-green-50 transition-colors"
+            >
+              <CheckCircle size={13} /> Approve
             </button>
-            {row.status !== "approved" && (
-              <button onClick={() => handleApprove(row.id)} className="text-sm px-3 py-2 bg-emerald-50 rounded text-emerald-700 hover:bg-emerald-100 transition-colors">
-                Approve
-              </button>
-            )}
-            {row.status !== "cancelled" && (
-              <button onClick={() => handleCancel(row.id)} className="text-sm px-3 py-2 bg-red-50 rounded text-red-700 hover:bg-red-100 transition-colors">
-                Cancel
-              </button>
-            )}
+            <button
+              onClick={() => updateStatus(row.id, "rejected")}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-red-300 rounded text-red-700 hover:bg-red-50 transition-colors"
+            >
+              <XCircle size={13} /> Reject
+            </button>
           </div>
+        ) : (
+          <span className={`inline-flex items-center gap-1 text-xs ${row.status === "approved" ? "text-green-600" : "text-red-600"}`}>
+            {row.status === "approved" ? <CheckCircle size={13} /> : <XCircle size={13} />}
+            {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+          </span>
         ),
-      },
-    ],
-    [bookings]
-  );
+    },
+  ];
+
+  const pendingCount = data.filter((b) => b.status === "pending").length;
 
   return (
-    <PrivateRoute allowedRoles={["admin"]}>
-      <DashboardLayout role="admin" pageTitle="Manage Bookings" pageSubtitle="Review and update appointment requests" userName="Admin">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-slate-500">{filteredBookings.length} bookings shown</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Booking Requests</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-slate-600">Filter:</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-[#097969] focus:ring-1 focus:ring-[#097969] outline-none">
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Booking Requests</h2>
+          <p className="text-sm text-gray-500">Manage career guidance and resource bookings.</p>
         </div>
+        
+        {pendingCount > 0 && !loading && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded">
+            <Clock size={13} />
+            {pendingCount} pending approval
+          </div>
+        )}
+      </div>
 
-        <Table columns={columns} data={filteredBookings} emptyMessage="No booking requests found." />
+      <div className="flex items-center gap-2">
+        {["all", "pending", "approved", "rejected"].map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilterStatus(s)}
+            className={`px-3 py-1.5 text-xs rounded border transition-colors capitalize ${
+              filterStatus === s
+                ? "bg-[#1a2e4a] text-white border-[#1a2e4a]"
+                : "border-gray-300 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {s === "all" ? "All Bookings" : s}
+          </button>
+        ))}
+      </div>
 
-        <Modal isOpen={isDetailsOpen} onClose={() => setIsDetailsOpen(false)} title="Booking Details" size="md">
-          {selectedBooking ? (
-            <div className="space-y-4 text-sm text-slate-700">
-              <div>
-                <p className="font-semibold">Name</p>
-                <p>{selectedBooking.name}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Email</p>
-                <p>{selectedBooking.email}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Phone</p>
-                <p>{selectedBooking.phone}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Service</p>
-                <p>{selectedBooking.service}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Date</p>
-                <p>{selectedBooking.date}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Purpose</p>
-                <p>{selectedBooking.purpose}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Status</p>
-                <StatusBadge status={selectedBooking.status} />
-              </div>
-            </div>
-          ) : (
-            <p className="text-slate-500">No booking selected.</p>
-          )}
-        </Modal>
-
-        {notification && <Toast message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      </DashboardLayout>
-    </PrivateRoute>
+      <Table<Booking>
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyMessage="No booking requests found for the selected filter."
+      />
+    </div>
   );
 }

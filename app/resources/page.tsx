@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { resources, videos, cvTemplates } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import {
   Search,
   Download,
@@ -17,16 +17,121 @@ import {
   X,
 } from "lucide-react";
 
+interface ResourceItem {
+  id: string;
+  title: string;
+  fileName: string;
+  fileSize: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  category?: string;
+  type?: string;
+  description?: string;
+  downloads?: number;
+  featured?: boolean;
+}
+
+interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  duration: string;
+  speaker?: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  uploadedAt: string;
+  views?: number;
+  featured?: boolean;
+}
+
+interface CVTemplate {
+  id: string;
+  name: string;
+  description: string;
+  style: string;
+  thumbnail?: string;
+  previewUrl?: string;
+}
+
 export default function ResourcesPage() {
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [cvTemplates, setCvTemplates] = useState<CVTemplate[]>([]);
   const [activeTab, setActiveTab] = useState("documents");
   const [searchQuery, setSearchQuery] = useState("");
   const [savedResources, setSavedResources] = useState<string[]>([]);
   const [savedVideos, setSavedVideos] = useState<string[]>([]);
-  const [selectedResource, setSelectedResource] = useState<(typeof resources)[0] | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<(typeof videos)[0] | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(cvTemplates[0]?.id || "");
+  const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch resources
+        const { data: resData, error: resError } = await supabase
+          .from("resources")
+          .select("*")
+          .order("uploaded_at", { ascending: false });
+        
+        if (resError) {
+          console.error("ResourcesPage: Supabase resources error:", resError);
+          setError("Failed to load documents.");
+        } else if (resData) {
+          setResources(resData.map((r: any) => ({
+            id: r.id, title: r.title, fileName: r.file_name, fileSize: r.file_size,
+            uploadedAt: r.uploaded_at, uploadedBy: r.uploaded_by, category: r.category,
+            type: r.type, description: r.description, downloads: r.downloads, featured: r.featured,
+          })));
+        }
+
+        // Fetch videos
+        const { data: vidData, error: vidError } = await supabase
+          .from("videos")
+          .select("*")
+          .order("uploaded_at", { ascending: false });
+        
+        if (vidError) {
+          console.error("ResourcesPage: Supabase videos error:", vidError);
+          setError("Failed to load videos.");
+        } else if (vidData) {
+          setVideos(vidData.map((v: any) => ({
+            id: v.id, title: v.title, description: v.description, category: v.category,
+            duration: v.duration, speaker: v.speaker, thumbnailUrl: v.thumbnail_url,
+            videoUrl: v.video_url, uploadedAt: v.uploaded_at, views: v.views, featured: v.featured,
+          })));
+        }
+
+        // Fetch CV templates
+        const { data: tplData, error: tplError } = await supabase.from("cv_templates").select("*");
+        
+        if (tplError) {
+          console.error("ResourcesPage: Supabase templates error:", tplError);
+          setError("Failed to load templates.");
+        } else if (tplData) {
+          setCvTemplates(tplData.map((t: any) => ({
+            id: t.id, name: t.name, description: t.description, style: t.style,
+            thumbnail: t.thumbnail, previewUrl: t.preview_url,
+          })));
+          if (tplData.length > 0) setSelectedTemplateId(tplData[0].id);
+        }
+      } catch (err: any) {
+        console.error("ResourcesPage: Data fetch crash:", err);
+        setError(err.message || "An unexpected error occurred.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
   const [cvFormData, setCvFormData] = useState({
     fullName: "Jane Doe",
     title: "Aspiring Data Analyst",
@@ -64,7 +169,7 @@ export default function ResourcesPage() {
   const categories = useMemo(() => {
     const cats = new Set(resources.map((r) => r.category));
     return Array.from(cats).sort();
-  }, []);
+  }, [resources]);
 
   // Filter documents
   const filteredDocuments = useMemo(() => {
@@ -76,7 +181,7 @@ export default function ResourcesPage() {
         categoryFilter === "all" || resource.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [resources, searchQuery, categoryFilter]);
 
   // Filter videos
   const filteredVideos = useMemo(() => {
@@ -87,11 +192,11 @@ export default function ResourcesPage() {
       const matchesCategory = categoryFilter === "all" || video.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [videos, searchQuery, categoryFilter]);
 
   const selectedTemplate = useMemo(
     () => cvTemplates.find((template) => template.id === selectedTemplateId) ?? cvTemplates[0],
-    [selectedTemplateId]
+    [selectedTemplateId, cvTemplates]
   );
 
   const updateCvField = (field: keyof typeof cvFormData, value: string) => {
@@ -157,7 +262,23 @@ export default function ResourcesPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-12">
-        {/* Search Bar */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#097969]"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading resources...</p>
+          </div>
+        )}
+
+        {error && !isLoading && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-8 flex items-center gap-3">
+            <X className="h-5 w-5" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!isLoading && (
+          <>
+            {/* Search Bar */}
         <div className="mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -582,15 +703,17 @@ export default function ResourcesPage() {
             </div>
           </div>
         )}
-      </main>
+      </>
+    )}
+  </main>
 
       {/* Resource Detail Modal */}
       {selectedResource && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex justify-between items-start">
               <h2 className="text-2xl font-bold text-gray-900">
-                {selectedResource.title}
+                {selectedResource?.title}
               </h2>
               <button
                 onClick={() => setSelectedResource(null)}
@@ -601,25 +724,25 @@ export default function ResourcesPage() {
             </div>
 
             <div className="p-6">
-              <p className="text-gray-600 mb-4">{selectedResource.description}</p>
+              <p className="text-gray-600 mb-4">{selectedResource?.description}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <p className="text-sm text-gray-500">Category</p>
-                  <p className="font-semibold">{selectedResource.category}</p>
+                  <p className="font-semibold">{selectedResource?.category}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">File Type</p>
-                  <p className="font-semibold">{selectedResource.type}</p>
+                  <p className="font-semibold">{selectedResource?.type}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">File Size</p>
-                  <p className="font-semibold">{selectedResource.fileSize}</p>
+                  <p className="font-semibold">{selectedResource?.fileSize}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Downloads</p>
                   <p className="font-semibold">
-                    {selectedResource.downloads?.toLocaleString()}
+                    {selectedResource?.downloads?.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -629,7 +752,10 @@ export default function ResourcesPage() {
                   <Download className="h-5 w-5" />
                   Download Now
                 </button>
-                <button className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                <button 
+                  onClick={() => setSelectedResource(null)}
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
                   Close
                 </button>
               </div>
@@ -692,21 +818,21 @@ export default function ResourcesPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => toggleSaveVideo(selectedVideo.id)}
+                  onClick={() => selectedVideo && toggleSaveVideo(selectedVideo.id)}
                   className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center gap-2 border ${
-                    savedVideos.includes(selectedVideo.id)
+                    selectedVideo && savedVideos.includes(selectedVideo.id)
                       ? "bg-pink-50 border-pink-300 text-pink-700"
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <Heart
                     className={`h-5 w-5 ${
-                      savedVideos.includes(selectedVideo.id)
+                      selectedVideo && savedVideos.includes(selectedVideo.id)
                         ? "fill-pink-500 text-pink-500"
                         : ""
                     }`}
                   />
-                  {savedVideos.includes(selectedVideo.id) ? "Saved" : "Save"}
+                  {selectedVideo && savedVideos.includes(selectedVideo.id) ? "Saved" : "Save"}
                 </button>
               </div>
             </div>

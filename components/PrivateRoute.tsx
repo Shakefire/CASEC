@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Role, useMockAuth } from "@/lib/auth";
+import { Role, useAuth } from "@/lib/auth";
 
 interface PrivateRouteProps {
   allowedRoles: Role[];
@@ -10,7 +10,7 @@ interface PrivateRouteProps {
 }
 
 export default function PrivateRoute({ allowedRoles, children }: PrivateRouteProps) {
-  const { role } = useMockAuth();
+  const { role } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
