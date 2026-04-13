@@ -202,11 +202,11 @@ export default function HomePage() {
                   <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
                     Career Services Centre
                     <span className="block text-3xl font-semibold mt-2">
-                      University,
+                      University, Nigeria
                     </span>
                   </h1>
                   <p className="mt-6 max-w-xl text-sm leading-7 text-emerald-100">
-                    Welcome to the Career Services Centre University,, your
+                    Welcome to the Career Services Centre University, Nigeria, your
                     gateway to professional success. Whether you're exploring career
                     options, searching for internships, or preparing for life after
                     graduation, we are here to support you.
@@ -350,14 +350,14 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-[#097969]/40" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-6">
                   <div className="text-5xl font-bold mb-2">CASEC</div>
-                  <p className="text-sm leading-6">Career Services Centre University,</p>
+                  <p className="text-sm leading-6">Career Services Centre University, Nigeria</p>
                 </div>
               </div>
 
               {/* Content Side */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-4">About CASEC</p>
-                <h2 className="text-3xl font-bold text-slate-900 mb-6">Welcome to Career Services Centre University,</h2>
+                <h2 className="text-3xl font-bold text-slate-900 mb-6">Welcome to Career Services Centre University, Nigeria</h2>
 
                 <div className="space-y-6 mb-8">
                   <div>

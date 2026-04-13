@@ -51,7 +51,7 @@ const initialOpportunities: AdminOpportunity[] = [
     description: "Networking event for career development and employer engagement.",
     company: "CASEC Events",
     type: "event",
-    location: "University,",
+    location: "University, Nigeria",
     deadline: "2025-07-20",
     status: "rejected",
     createdAt: "2025-05-25",

@@ -89,10 +89,10 @@ export default function AboutPage() {
         <section className="py-16 border-b border-slate-100">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-slate-900 mb-6">
-              Welcome to Career Services Centre University,
+              Welcome to Career Services Centre University, Nigeria
             </h2>
             <p className="text-sm leading-7 text-slate-600 mb-6">
-              The Career Services Centre (CASEC) at University, is dedicated to supporting students and graduates in their career development journey. We provide a range of services designed to equip students with the tools, knowledge, and connections they need to transition successfully from academia to the professional world.
+              The Career Services Centre (CASEC) at University, Nigeria is dedicated to supporting students and graduates in their career development journey. We provide a range of services designed to equip students with the tools, knowledge, and connections they need to transition successfully from academia to the professional world.
             </p>
             <p className="text-sm leading-7 text-slate-600">
               Our team of career professionals, counsellors, and industry partners work collaboratively to deliver personalised guidance, workshops, networking events, and access to internship and employment opportunities.
