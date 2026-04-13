@@ -7,7 +7,7 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-[0.2em] mb-4">CASEC</h3>
             <p className="text-xs leading-6 text-stone-400">
-              Career Services Centre, University, Nigeria – empowering students to discover and achieve their professional aspirations.
+              Career Services Centre, University, – empowering students to discover and achieve their professional aspirations.
             </p>
           </div>
 
@@ -76,7 +76,7 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-stone-800 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-stone-500">
-          <p>© 2026 Career Services Centre, University, Nigeria. All Rights Reserved.</p>
+          <p>© 2026 Career Services Centre, University,. All Rights Reserved.</p>
           <p>Designed by CASEC team</p>
         </div>
       </div>

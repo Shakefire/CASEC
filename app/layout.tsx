@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CASEC Career Portal",
-  description: "University, Nigeria Career Services Centre unified portal.",
+  description: "University, Career Services Centre unified portal.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
