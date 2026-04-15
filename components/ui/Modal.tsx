@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg";
+  maxWidth?: string;
 }
 
 export default function Modal({
@@ -17,6 +18,7 @@ export default function Modal({
   title,
   children,
   size = "md",
+  maxWidth,
 }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -31,15 +33,16 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  const sizeClass =
-    size === "sm"
-      ? "max-w-sm"
-      : size === "lg"
-      ? "max-w-2xl"
-      : "max-w-lg";
+  const sizeClass = maxWidth
+    ? maxWidth
+    : size === "sm"
+    ? "max-w-sm"
+    : size === "lg"
+    ? "max-w-2xl"
+    : "max-w-lg";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ToggleLeft, ToggleRight, Search } from "lucide-react";
+import { useState } from "react";
+import { Search, Eye, FileText, ExternalLink } from "lucide-react";
 import Table, { Column } from "@/components/ui/Table";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/FormField";
+import { useUsersManagement } from "@/lib/hooks/useDashboard";
+import Link from "next/link";
 
-interface Profile {
+interface AdminProfile {
   id: string;
   email: string;
   role: string;
@@ -15,69 +17,98 @@ interface Profile {
   last_name: string | null;
   company_name: string | null;
   created_at: string;
+  student_profiles?: {
+    profile_completion_score: number;
+    cv_url: string | null;
+    department: string | null;
+  }[] | null;
 }
 
 export default function AdminUsersPage() {
-  const [data, setData] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const { data = [], isLoading } = useUsersManagement();
 
-  async function fetchUsers() {
-    setLoading(true);
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("❌ USERS FETCH ERROR: " + (error.message || error));
-    } else {
-      setData(profiles || []);
-    }
-    setLoading(false);
-  }
-
-  const filteredUsers = data.filter((u) => {
+  const filteredUsers = (data as AdminProfile[]).filter((u) => {
     const matchesRole = filterRole === "all" || u.role === filterRole;
     const name = `${u.first_name || ""} ${u.last_name || ""} ${u.company_name || ""}`.toLowerCase();
     const matchesSearch = name.includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesRole && matchesSearch;
   });
 
-  const columns: Column<Profile>[] = [
+  const columns: Column<AdminProfile>[] = [
     {
       key: "name",
-      header: "Name",
+      header: "User Details",
       render: (row) => (
-        <span className="font-medium text-gray-800">
-          {row.role === "employer" && row.company_name 
-            ? row.company_name 
-            : `${row.first_name || ""} ${row.last_name || ""}`.trim() || "N/A"}
-        </span>
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-800">
+            {row.role === "employer" && row.company_name 
+              ? row.company_name 
+              : `${row.first_name || ""} ${row.last_name || ""}`.trim() || "N/A"}
+          </span>
+          <span className="text-xs text-gray-400">{row.email}</span>
+        </div>
       ),
     },
-    { key: "email", header: "Email", render: (row) => <span className="text-gray-600">{row.email}</span> },
     {
       key: "role",
       header: "Role",
       render: (row) => <StatusBadge status={row.role} />,
     },
-    { key: "created_at", header: "Joined", render: (row) => <span className="text-gray-500">{new Date(row.created_at).toLocaleDateString()}</span> },
+    {
+      key: "completion",
+      header: "Completion",
+      render: (row) => {
+        if (row.role !== "student") return <span className="text-gray-300">—</span>;
+        const studentProfile = row.student_profiles?.[0];
+        const score = studentProfile?.profile_completion_score || 0;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-12 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className={`h-full rounded-full ${score >= 80 ? 'bg-green-500' : score >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} 
+                style={{ width: `${score}%` }}
+              ></div>
+            </div>
+            <span className="text-[10px] font-bold text-gray-500">{score}%</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "cv",
+      header: "CV",
+      render: (row) => {
+        const studentProfile = row.student_profiles?.[0];
+        if (row.role !== "student" || !studentProfile?.cv_url) return <span className="text-gray-300">—</span>;
+        return (
+          <a 
+            href={studentProfile.cv_url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[#097969] hover:text-[#076356]"
+            title="Download CV"
+          >
+            <FileText size={16} />
+          </a>
+        );
+      },
+    },
+    { key: "created_at", header: "Joined", render: (row) => <span className="text-xs text-gray-500">{new Date(row.created_at).toLocaleDateString()}</span> },
     {
       key: "actions",
       header: "Actions",
       render: (row) => (
-        <button
-          onClick={() => alert("User management actions coming soon")}
-          className="text-xs text-gray-400 cursor-not-allowed italic"
-        >
-          Manage
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/admin/users/${row.id}`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 text-gray-700 text-[10px] font-bold uppercase rounded border border-gray-200 hover:bg-gray-100 transition-colors"
+          >
+            <Eye size={12} /> View Profile
+          </Link>
+        </div>
       ),
     },
   ];
@@ -128,11 +159,11 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      <Table<Profile>
+      <Table<AdminProfile>
         columns={columns}
         data={filteredUsers}
-        loading={loading}
-        emptyMessage="No users found in Supabase matching your criteria."
+        loading={isLoading}
+        emptyMessage="No users found matching your criteria."
       />
     </div>
   );

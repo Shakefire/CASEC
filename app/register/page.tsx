@@ -78,6 +78,29 @@ export default function RegisterPage() {
           // Still redirect as the auth record is valid
         }
         
+        // 4. Trigger Welcome Email (Non-blocking)
+        fetch("/api/emails/welcome", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            name: displayName,
+            role: role
+          })
+        }).catch(err => console.error("Failed to send welcome email:", err));
+
+        // 5. Notify Admin of New Employer (Non-blocking)
+        if (role === 'employer') {
+          fetch("/api/emails/admin-alert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "New Employer Registered",
+              message: `A new company "${companyName}" has registered and is awaiting approval.`
+            })
+          }).catch(err => console.error("Failed to send admin alert:", err));
+        }
+
         // Dashboard redirect
         router.push(`/${role}`);
         return;

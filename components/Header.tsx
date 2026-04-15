@@ -26,37 +26,37 @@ export default function Header() {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <header className="w-full bg-[#097969] shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="bg-white rounded-full w-12 h-12 flex items-center justify-center">
-            <span className="text-[#097969] font-black text-xs leading-none">CASEC</span>
+    <header className="w-full bg-[#097969] shadow-md sticky top-0 z-[100]">
+      <div className="max-w-7xl mx-auto px-4 py-5 flex flex-wrap items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-inner">
+            <span className="text-[#097969] font-black text-sm leading-none">CASEC</span>
           </div>
           <div>
-            <p className="text-white font-bold text-sm">Career Services Centre</p>
-            <p className="text-[#d1fae5] text-xs">University, Nigeria</p>
+            <p className="text-white font-extrabold text-lg leading-tight">Career Services Centre</p>
+            <p className="text-[#d1fae5] text-sm opacity-90">University, Nigeria</p>
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+            className="md:hidden inline-flex items-center justify-center p-2.5 rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-3">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3 py-2 rounded text-sm transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-base transition-all font-bold ${
                   isActive(link.href)
-                    ? "bg-white/15 text-white font-semibold"
-                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "text-white/90 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {link.label}
@@ -65,10 +65,10 @@ export default function Header() {
             {isLoggedIn && role === "admin" && (
               <Link
                 href="/admin"
-                className={`px-3 py-2 rounded text-sm transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-base transition-all font-bold ${
                   isActive("/admin")
-                    ? "bg-white/15 text-white font-semibold"
-                    : "text-[#d1fae5] hover:bg-white/10 hover:text-white"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "text-white/90 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 Admin
@@ -80,10 +80,10 @@ export default function Header() {
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
-                className="flex items-center gap-2 rounded border border-white/20 bg-white/10 text-white text-sm px-4 py-2 outline-none hover:bg-white/20 focus:bg-white/20 focus:border-white transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-white/30 bg-white/20 text-white text-base px-6 py-2.5 outline-none hover:bg-white/30 transition-all font-bold"
               >
                 {(role ? role.charAt(0).toUpperCase() + role.slice(1) : "Account")}
-                <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-5 w-5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isDropdownOpen && (
@@ -125,7 +125,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-2 rounded border border-white/20 bg-white/10 text-white text-sm px-4 py-2 outline-none hover:bg-white/20 focus:bg-white/20 focus:border-white transition-colors"
+              className="flex items-center gap-2 rounded-md border border-white/30 bg-white/20 text-white text-sm px-6 py-2.5 outline-none hover:bg-white/30 transition-all font-bold"
             >
               Login
             </Link>

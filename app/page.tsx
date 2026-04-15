@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { supabase } from "@/lib/supabase";
 import JobCard from "@/components/ui/JobCard";
 import EventCard from "@/components/ui/EventCard";
-import { Users, Monitor, CheckCircle, BookOpen, Calendar, MapPin } from "lucide-react";
+import { Users, Monitor, CheckCircle, BookOpen, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useOpportunities, useEvents } from "@/lib/hooks/useDashboard";
+import BookingForm from "@/components/forms/BookingForm";
 
 const features = [
   {
@@ -53,82 +56,20 @@ const testimonials = [
   },
 ];
 
-const eventImages = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop&q=80", // Career fair/networking event
-  "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop&q=80", // Workshop/classroom setting
-  "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=300&fit=crop&q=80", // Business/entrepreneurship
-];
-
-const heroImages = [
-  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=600&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&h=600&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1200&h=600&fit=crop&q=80",
-];
-
 export default function HomePage() {
-  const [opportunities, setOpportunities] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        console.log("HomePage: Starting data fetch...");
-        
-        // Fetch opportunities
-        const { data: opps, error: oppsError } = await supabase
-          .from("opportunities")
-          .select("*")
-          .eq("status", "active")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        if (oppsError) {
-          console.error("HomePage: Supabase opportunities error:", oppsError);
-          setError("Failed to load opportunities.");
-        } else if (opps) {
-          setOpportunities((opps || []).map((o: any) => ({
-            id: o.id, title: o.title, type: o.type, createdAt: o.created_at,
-          })));
-        }
-
-        // Fetch events
-        const { data: evts, error: evtsError } = await supabase
-          .from("events")
-          .select("*")
-          .eq("is_past", false)
-          .order("date", { ascending: true })
-          .limit(3);
-
-        if (evtsError) {
-          console.error("HomePage: Supabase events error:", evtsError);
-          setError("Failed to load events.");
-        } else if (evts) {
-          setEvents((evts || []).map((e: any) => ({
-            id: e.id, title: e.title, date: e.date, location: e.location, description: e.description,
-          })));
-        }
-      } catch (err: any) {
-        console.error("HomePage: Data fetch crash:", err);
-        setError(err.message || "An unexpected error occurred.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  if (error && opportunities.length === 0 && events.length === 0) {
-    console.log("HomePage: Rendering error state:", error);
-  }
+  // Queries using centralized hooks
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useOpportunities("active", 5);
+  const { data: events = [], isLoading: eventsLoading } = useEvents(false, 3);
 
   return (
     <div className="min-h-screen bg-white">
       <Header />
 
       {/* Hero Section with Carousel Animation */}
-      <section className="relative h-96 md:h-[480px] overflow-hidden">
+      <section className="relative h-[400px] md:h-[500px] overflow-hidden">
         {/* Carousel Background */}
         <style>{`
           @keyframes heroSlide1 {
@@ -162,23 +103,23 @@ export default function HomePage() {
           }
           
           @keyframes textContent1 {
-            0% { opacity: 0; transform: translateY(30px); }
+            0% { opacity: 0; transform: translateY(20px); }
             5%, 30% { opacity: 1; transform: translateY(0); }
-            33% { opacity: 0; transform: translateY(-30px); }
+            33% { opacity: 0; transform: translateY(0); }
             100% { opacity: 0; }
           }
           
           @keyframes textContent2 {
-            0%, 32% { opacity: 0; pointer-events: none; }
+            0%, 32% { opacity: 0; pointer-events: none; transform: translateY(20px); }
             37%, 62% { opacity: 1; pointer-events: auto; transform: translateY(0); }
-            65% { opacity: 0; transform: translateY(-30px); }
+            65% { opacity: 0; pointer-events: auto; transform: translateY(0); }
             100% { opacity: 0; pointer-events: none; }
           }
           
           @keyframes textContent3 {
-            0%, 66% { opacity: 0; pointer-events: none; }
+            0%, 66% { opacity: 0; pointer-events: none; transform: translateY(20px); }
             71%, 97% { opacity: 1; pointer-events: auto; transform: translateY(0); }
-            100% { opacity: 0; pointer-events: none; }
+            100% { opacity: 0; pointer-events: none; transform: translateY(0); }
           }
           
           .hero-slide-1 {
@@ -192,456 +133,276 @@ export default function HomePage() {
           .hero-slide-3 {
             animation: heroSlide3 18s infinite;
           }
-          
-          .bg-image {
-            animation: heroZoom 18s infinite;
-          }
-          
-          .hero-content-1 {
-            animation: textContent1 18s infinite;
-            max-width: 40rem;
-          }
-          
-          .hero-content-2 {
-            animation: textContent2 18s infinite;
-            max-width: 40rem;
-          }
-          
-          .hero-content-3 {
-            animation: textContent3 18s infinite;
-            max-width: 40rem;
-          }
         `}</style>
-
-        {/* Slide 1 - Main Hero Image */}
-        <div className="hero-slide-1 absolute inset-0">
-          <div
-            className="bg-image w-full h-full bg-cover bg-center"
-            style={{
-              backgroundImage: `url('${heroImages[0]}')`,
-            }}
-          >
-            <div className="absolute inset-0 bg-[#097969cc]" />
-          </div>
-        </div>
-
-        {/* Slide 2 - Career Workshop Image */}
-        <div className="hero-slide-2 absolute inset-0">
-          <div
-            className="bg-image w-full h-full bg-cover bg-center"
-            style={{
-              backgroundImage: `url('${heroImages[1]}')`,
-            }}
-          >
-            <div className="absolute inset-0 bg-[#097969cc]" />
-          </div>
-        </div>
-
-        {/* Slide 3 - Networking Event Image */}
-        <div className="hero-slide-3 absolute inset-0">
-          <div
-            className="bg-image w-full h-full bg-cover bg-center"
-            style={{
-              backgroundImage: `url('${heroImages[2]}')`,
-            }}
-          >
-            <div className="absolute inset-0 bg-[#097969cc]" />
-          </div>
-        </div>
-
-        {/* Content Overlay */}
-        <div className="relative z-10 h-full flex items-center text-white">
-          <div className="w-full">
-            {/* Content Set 1 */}
-            <div className="flex items-center h-full">
-              <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl hero-content-1">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100 mb-3">
-                    Welcome to
-                  </p>
-                  <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
-                    Career Services Centre
-                    <span className="block text-3xl font-semibold mt-2">
-                      University, Nigeria
-                    </span>
-                  </h1>
-                  <p className="mt-6 max-w-xl text-sm leading-7 text-emerald-100">
-                    Welcome to the Career Services Centre University, Nigeria, your
-                    gateway to professional success. Whether you're exploring career
-                    options, searching for internships, or preparing for life after
-                    graduation, we are here to support you.
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link
-                      href="/resources"
-                      className="inline-flex items-center rounded bg-white px-5 py-3 text-sm font-semibold text-[#097969]"
-                    >
-                      Read More
-                    </Link>
-                    <Link
-                      href="/jobs"
-                      className="inline-flex items-center rounded border border-white bg-white/10 px-5 py-3 text-sm text-white hover:bg-white/20"
-                    >
-                      Career Opportunities
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Set 2 */}
-            <div className="flex items-center h-full absolute inset-0">
-              <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl hero-content-2">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100 mb-3">
-                    Find Your Path
-                  </p>
-                  <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
-                    Internships &
-                    <span className="block text-3xl font-semibold mt-2">
-                      Working Opportunities
-                    </span>
-                  </h1>
-                  <p className="mt-6 max-w-xl text-sm leading-7 text-emerald-100">
-                    Explore career opportunities tailored to your skills and aspirations. Access scholarships, internships, and job placements from top employers.
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link
-                      href="/jobs"
-                      className="inline-flex items-center rounded bg-white px-5 py-3 text-sm font-semibold text-[#097969]"
-                    >
-                      Browse Opportunities
-                    </Link>
-                    <Link
-                      href="/events"
-                      className="inline-flex items-center rounded border border-white bg-white/10 px-5 py-3 text-sm text-white hover:bg-white/20"
-                    >
-                      Upcoming Events
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Set 3 */}
-            <div className="flex items-center h-full absolute inset-0">
-              <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl hero-content-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100 mb-3">
-                    Get Prepared
-                  </p>
-                  <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
-                    Build Your Skills &
-                    <span className="block text-3xl font-semibold mt-2">
-                      Land Your Dream Job
-                    </span>
-                  </h1>
-                  <p className="mt-6 max-w-xl text-sm leading-7 text-emerald-100">
-                    Access workshops, webinars, and CV guidance. Prepare for interviews with expert coaching and career counselling from industry professionals.
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link
-                      href="/resources"
-                      className="inline-flex items-center rounded bg-white px-5 py-3 text-sm font-semibold text-[#097969]"
-                    >
-                      Explore Resources
-                    </Link>
-                    <Link
-                      href="/jobs"
-                      className="inline-flex items-center rounded border border-white bg-white/10 px-5 py-3 text-sm text-white hover:bg-white/20"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              </div>
+        
+        {/* Slide 1 */}
+        <div className="hero-slide-1 absolute inset-0 bg-cover bg-center transition-opacity duration-1000" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=600&fit=crop&q=80')" }}>
+          <div className="absolute inset-0 bg-[#097969]/65"></div>
+          <div className="relative h-full container mx-auto px-6 flex flex-col justify-center text-white" style={{ animation: "textContent1 18s infinite" }}>
+            <p className="text-[10px] md:text-xs font-bold tracking-[0.2em] mb-2 md:mb-3 opacity-90 uppercase">Welcome to</p>
+            <h1 className="text-3xl md:text-5xl font-black mb-1 leading-tight tracking-tight">Career Services Centre</h1>
+            <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 opacity-95">University, Nigeria</h2>
+            <p className="text-sm md:text-base mb-6 md:mb-8 max-w-2xl opacity-80 leading-relaxed">
+              Welcome to the Career Services Centre University, Nigeria, your gateway to professional success. Whether you're exploring career options, searching for internships, or preparing for life after graduation, we are here to support you.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/about" className="bg-white text-[#097969] px-7 py-2.5 rounded-md font-bold hover:bg-gray-100 transition-all shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 text-sm md:text-base">Read More</Link>
+              <Link href="/jobs" className="border-2 border-white text-white px-7 py-2.5 rounded-md font-bold hover:bg-white/10 transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-sm md:text-base">Career Opportunities</Link>
             </div>
           </div>
         </div>
 
-        {/* Carousel Indicators */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-          <div className="w-2 h-2 rounded-full bg-white opacity-80 animate-pulse" />
-          <div className="w-2 h-2 rounded-full bg-white/40" />
-          <div className="w-2 h-2 rounded-full bg-white/40" />
+        {/* Slide 2 */}
+        <div className="hero-slide-2 absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&h=600&fit=crop&q=80')" }}>
+          <div className="absolute inset-0 bg-[#097969]/70"></div>
+          <div className="relative h-full container mx-auto px-6 flex flex-col justify-center text-white" style={{ animation: "textContent2 18s infinite" }}>
+            <p className="text-[10px] md:text-xs font-bold tracking-[0.2em] mb-2 md:mb-3 opacity-90 uppercase">Get Prepared</p>
+            <h1 className="text-3xl md:text-5xl font-black mb-1 leading-tight tracking-tight">Build Your Skills &</h1>
+            <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 opacity-95">Land Your Dream Job</h2>
+            <p className="text-sm md:text-base mb-6 md:mb-8 max-w-2xl opacity-80 leading-relaxed">
+              Access workshops, webinars, and CV guidance. Prepare for interviews with expert coaching and career counselling from industry professionals.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/resources" className="bg-white text-[#097969] px-7 py-2.5 rounded-md font-bold hover:bg-gray-100 transition-all shadow-lg text-sm md:text-base">Explore Resources</Link>
+              <Link href="/about" className="border-2 border-white text-white px-7 py-2.5 rounded-md font-bold hover:bg-white/10 transition-all text-sm md:text-base">Learn More</Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Slide 3 */}
+        <div className="hero-slide-3 absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1200&h=600&fit=crop&q=80')" }}>
+          <div className="absolute inset-0 bg-[#097969]/65"></div>
+          <div className="relative h-full container mx-auto px-6 flex flex-col justify-center text-white" style={{ animation: "textContent3 18s infinite" }}>
+            <p className="text-[10px] md:text-xs font-bold tracking-[0.2em] mb-2 md:mb-3 opacity-90 uppercase">Find Your Path</p>
+            <h1 className="text-3xl md:text-5xl font-black mb-1 leading-tight tracking-tight">Internships &</h1>
+            <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 opacity-95">Working Opportunities</h2>
+            <p className="text-sm md:text-base mb-6 md:mb-8 max-w-2xl opacity-80 leading-relaxed">
+              Explore career opportunities tailored to your skills and aspirations. Access scholarships, internships, and job placements from top employers.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/jobs" className="bg-white text-[#097969] px-7 py-2.5 rounded-md font-bold hover:bg-gray-100 transition-all shadow-lg text-sm md:text-base">Browse Opportunities</Link>
+              <Link href="/events" className="border-2 border-white text-white px-7 py-2.5 rounded-md font-bold hover:bg-white/10 transition-all text-sm md:text-base">Upcoming Events</Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Carousel Dots */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-10">
+          <div className="w-2 h-2 rounded-full bg-white opacity-100 animate-pulse"></div>
+          <div className="w-2 h-2 rounded-full bg-white opacity-40"></div>
+          <div className="w-2 h-2 rounded-full bg-white opacity-40"></div>
         </div>
       </section>
 
-      <main>
-        {/* Features Section */}
-        <section className="bg-white py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-3">Our Features</p>
-              <h2 className="text-4xl font-bold text-slate-900">What We Offer</h2>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={feature.title}
-                    className="group rounded-xl border border-slate-300 bg-gradient-to-br from-slate-50 to-white p-8 text-center hover:border-[#097969] hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="mb-4 inline-flex rounded-full bg-[#e6f4f1] p-4 text-[#097969] group-hover:scale-110 transition-transform">
-                      <Icon size={32} />
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">{feature.title}</h3>
-                    <p className="text-sm leading-6 text-slate-600">{feature.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Features Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-20">
+            <p className="text-[#097969] font-bold tracking-[0.2em] text-xs mb-4 uppercase">Our Services</p>
+            <h2 className="text-4xl md:text-5xl font-black text-[#1a2e4a] mb-6">Our Features</h2>
+            <div className="w-24 h-1.5 bg-[#097969] mx-auto rounded-full"></div>
           </div>
-        </section>
+          <div className="grid md:grid-cols-4 gap-10">
+            {features.map((f, i) => (
+              <div key={i} className="bg-white p-10 rounded-2xl shadow-sm hover:shadow-xl transition-all border border-gray-100 text-center group hover:-translate-y-2">
+                <div className="w-20 h-20 bg-[#097969]/10 rounded-2xl flex items-center justify-center mx-auto mb-8 group-hover:bg-[#097969] transition-colors">
+                  <f.icon className="text-[#097969] group-hover:text-white transition-colors" size={40} />
+                </div>
+                <h3 className="text-2xl font-black text-[#1a2e4a] mb-4">{f.title}</h3>
+                <p className="text-gray-600 text-base leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* About CASEC Section */}
-        <section className="bg-slate-50 py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
-              {/* Image Side */}
-              <div className="relative h-96 rounded-xl overflow-hidden shadow-xl">
-                <div
-                  className="w-full h-full bg-cover bg-center bg-gradient-to-br from-[#097969] to-[#065f52]"
-                  style={{
-                    backgroundImage: "url('/images/hero-bg.jpg')",
-                  }}
+      {/* About CASEC Section - What We Offer */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            {/* Image Side */}
+            <div className="lg:w-1/2 relative">
+              <div className="rounded-3xl overflow-hidden shadow-2xl relative aspect-[4/3]">
+                <img 
+                  src="/images/hero-bg.jpg" 
+                  alt="CASEC Building" 
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-[#097969]/40" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-6">
-                  <div className="text-5xl font-bold mb-2">CASEC</div>
-                  <p className="text-sm leading-6">Career Services Centre University, Nigeria</p>
+                <div className="absolute inset-0 bg-[#097969]/40 flex flex-col items-center justify-center text-white p-8 text-center">
+                  <h3 className="text-6xl font-black mb-2 tracking-tighter">CASEC</h3>
+                  <p className="text-lg font-bold opacity-90 leading-tight">Career Services Centre University, Nigeria</p>
+                </div>
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-[#097969]/10 rounded-full -z-10"></div>
+              <div className="absolute -top-6 -left-6 w-24 h-24 bg-[#097969]/10 rounded-full -z-10"></div>
+            </div>
+
+            {/* Content Side */}
+            <div className="lg:w-1/2 space-y-8">
+              <div>
+                <p className="text-[#097969] font-bold tracking-[0.2em] text-xs mb-4 uppercase">About CASEC</p>
+                <h2 className="text-4xl md:text-5xl font-black text-[#1a2e4a] leading-tight mb-6">
+                  Welcome to Career Services Centre University, Nigeria
+                </h2>
+              </div>
+
+              <div className="space-y-8">
+                <div className="relative pl-6 border-l-4 border-[#097969]">
+                  <h3 className="text-xl font-black text-[#1a2e4a] mb-3">Vision</h3>
+                  <p className="text-gray-600 text-lg leading-relaxed">
+                    To empower students to discover and achieve their professional aspirations by providing comprehensive career development support and facilitating successful transitions into the workforce.
+                  </p>
+                </div>
+
+                <div className="relative pl-6 border-l-4 border-[#097969]">
+                  <h3 className="text-xl font-black text-[#1a2e4a] mb-3">Mission</h3>
+                  <p className="text-gray-600 text-lg leading-relaxed">
+                    To offer personalized career guidance, connect students with employers, and enhance students' employability through skill development, networking opportunities and resources that foster professional growth.
+                  </p>
                 </div>
               </div>
 
-              {/* Content Side */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-4">About CASEC</p>
-                <h2 className="text-3xl font-bold text-slate-900 mb-6">Welcome to Career Services Centre University, Nigeria</h2>
-
-                <div className="space-y-6 mb-8">
-                  <div>
-                    <h4 className="text-base font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                      <div className="w-1 h-6 bg-[#097969] rounded" />
-                      Vision
-                    </h4>
-                    <p className="text-sm leading-7 text-slate-600 pl-4">
-                      To empower students to discover and achieve their professional aspirations by providing comprehensive career development support and facilitating successful transitions into the workforce.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-base font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                      <div className="w-1 h-6 bg-[#097969] rounded" />
-                      Mission
-                    </h4>
-                    <p className="text-sm leading-7 text-slate-600 pl-4">
-                      To offer personalized career guidance, connect students with employers, and enhance students' employability through skill development, networking opportunities and resources that foster professional growth.
-                    </p>
-                  </div>
-                </div>
-
-                <Link
-                  href="/resources"
-                  className="inline-flex items-center rounded-lg bg-[#097969] px-6 py-3 text-sm font-semibold text-white hover:bg-[#065f52] transition-colors"
+              <div className="pt-4">
+                <Link 
+                  href="/about" 
+                  className="inline-flex items-center gap-2 bg-[#097969] text-white px-8 py-4 rounded-lg font-bold hover:bg-[#076356] transition-all shadow-lg hover:-translate-y-1"
                 >
-                  Read More &rsaquo;
+                  Read More <span className="text-xl">›</span>
                 </Link>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Opportunities Section */}
-        <section className="bg-white py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-12">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-2">Opportunities</p>
-                <h3 className="text-3xl font-bold text-slate-900">Career Opportunities</h3>
+      {/* Career Opportunities Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="container mx-auto px-6">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="text-[#097969] font-bold tracking-[0.2em] text-xs mb-4 uppercase">Opportunities</p>
+              <h2 className="text-4xl font-black text-[#1a2e4a]">Career Opportunities</h2>
+            </div>
+            <Link href="/jobs" className="text-[#097969] font-bold text-sm hover:underline flex items-center gap-1">
+              View All Opportunities <span className="text-lg">›</span>
+            </Link>
+          </div>
+          
+          <div className="space-y-4">
+            {opportunitiesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-[#097969]" size={32} />
               </div>
-              <Link href="/jobs" className="text-sm text-[#097969] font-semibold hover:underline">
-                View All Opportunities &rsaquo;
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {opportunities.slice(0, 5).map((opp) => (
-                <div key={opp.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-slate-200 bg-white p-5 hover:border-[#097969] hover:shadow-md transition-all duration-200">
-                  <div className="flex items-start gap-4">
-                    <div className="mt-1 text-[#097969]">
-                      <CheckCircle size={20} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-900">{opp.title}</h4>
-                      <p className="text-xs text-slate-500 mt-1 capitalize">{opp.type}</p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-slate-500 whitespace-nowrap">Posted on {opp.createdAt}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Events Section */}
-        <section className="bg-slate-50 py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-12">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-2">What's On</p>
-                <h3 className="text-3xl font-bold text-slate-900">Upcoming Events</h3>
+            ) : opportunities.length > 0 ? (
+              opportunities.map((opp) => (
+                <JobCard key={opp.id} opportunity={opp} />
+              ))
+            ) : (
+              <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center">
+                <p className="text-gray-400 font-medium">No active opportunities found at the moment.</p>
               </div>
-              <Link href="/events" className="text-sm text-[#097969] font-semibold hover:underline">
-                View All Events &rsaquo;
-              </Link>
-            </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              {events.slice(0, 3).map((event, idx) => (
-                <div key={event.id} className="group rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-xl hover:border-[#097969] transition-all duration-300">
-                  {/* Event Image */}
-                  <div className="relative h-40 bg-gradient-to-br from-[#097969] to-[#065f52] overflow-hidden">
-                    <img
-                      src={eventImages[idx % eventImages.length]}
-                      alt={event.title}
-                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-[#097969]/20" />
-                    <div className="absolute top-3 right-3 bg-white text-[#097969] rounded-full w-14 h-14 flex flex-col items-center justify-center font-bold text-xs">
-                      {event.date ? (
-                        <>
-                          <div>{new Date(event.date).getDate()}</div>
-                          <div className="text-[10px]">
-                            {new Date(event.date).toLocaleString("en-US", { month: "short" })}
-                          </div>
-                        </>
-                      ) : (
-                        <div>TBD</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Event Content */}
-                  <div className="p-5">
-                    <h4 className="text-base font-semibold text-slate-900 mb-2 group-hover:text-[#097969] transition-colors">{event.title}</h4>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                      <MapPin size={14} className="text-[#097969]" />
-                      <span>{event.location}</span>
-                    </div>
-                    <p className="text-xs leading-5 text-slate-600 mb-4 line-clamp-2">{event.description}</p>
-                    <button className="text-xs font-semibold text-[#097969] hover:text-[#065f52] transition-colors">
-                      Learn More →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            )}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Testimonials Section */}
-        <section className="bg-[#097969] py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100 mb-3">Testimonials</p>
-              <h2 className="text-4xl font-bold text-white">What Our Students Say</h2>
+      {/* Upcoming Events Section */}
+      <section className="py-24 bg-gray-50/30">
+        <div className="container mx-auto px-6">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="text-[#097969] font-bold tracking-[0.2em] text-xs mb-4 uppercase">What's On</p>
+              <h2 className="text-4xl font-black text-[#1a2e4a]">Upcoming Events</h2>
             </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              {testimonials.map((testimonial, idx) => (
-                <div key={idx} className="rounded-lg bg-white p-6 hover:shadow-xl transition-shadow duration-300">
-                  <div className="text-[#097969] text-2xl mb-3">★★★★★</div>
-                  <p className="text-sm leading-6 text-slate-700 mb-4">"{testimonial.text}"</p>
-                  <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#097969] to-[#065f52] flex items-center justify-center text-white font-bold text-sm">
-                      {testimonial.initials}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{testimonial.author}</p>
-                      <p className="text-xs text-slate-500">{testimonial.dept}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Link href="/events" className="text-[#097969] font-bold text-sm hover:underline flex items-center gap-1">
+              View All Events <span className="text-lg">›</span>
+            </Link>
           </div>
-        </section>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {eventsLoading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <Loader2 className="animate-spin text-[#097969]" size={32} />
+              </div>
+            ) : events.length > 0 ? (
+              events.map((evt) => (
+                <EventCard key={evt.id} event={evt} />
+              ))
+            ) : (
+              <div className="col-span-full bg-white border border-gray-100 rounded-2xl p-12 text-center">
+                <p className="text-gray-400 font-medium">No upcoming events scheduled.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
-        {/* Career Counselling Section */}
-        <section className="bg-white py-20 border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#097969] mb-3">Book an Appointment</p>
-                <h2 className="text-3xl font-bold text-slate-900 mb-4">Schedule a Career Counselling Session</h2>
-                <p className="text-sm leading-7 text-slate-600">
-                  Book a one-on-one career counselling session with our advisors. We are here to help you map out your career path, review your CV, prepare for interviews, or explore graduate opportunities.
+      {/* Testimonials */}
+      <section className="py-24 bg-[#097969] text-white relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/5 rounded-full -ml-48 -mb-48 blur-3xl"></div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <p className="text-white/80 font-bold tracking-[0.2em] text-xs mb-4 uppercase">Testimonials</p>
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">What Our Students Say</h2>
+            <div className="w-24 h-1.5 bg-white/30 mx-auto rounded-full"></div>
+          </div>
+          
+          <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {testimonials.map((t, i) => (
+              <div key={i} className="bg-white p-10 rounded-3xl flex flex-col h-full shadow-2xl relative group transition-all hover:-translate-y-2 duration-500">
+                {/* Quote Icon */}
+                <div className="absolute -top-5 -left-5 w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.437.917-4.012 3.638-4.012 5.849h4v10h-9.984z" />
+                  </svg>
+                </div>
+
+                <div className="flex gap-1 mb-8">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-emerald-500 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                
+                <p className="text-gray-600 text-lg leading-relaxed mb-10 flex-grow italic font-medium">
+                  "{t.text}"
                 </p>
+                
+                <div className="flex items-center gap-4 pt-8 border-t border-gray-100 mt-auto">
+                  <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-md transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-[#1a2e4a] text-lg leading-tight">{t.author}</h4>
+                    <p className="text-[#097969] text-sm font-bold mt-1 uppercase tracking-wider">{t.dept}</p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-lg bg-slate-50 p-8 border border-slate-200">
-                <form className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-2">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Your full name"
-                      required
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#097969] focus:ring-1 focus:ring-[#097969]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-2">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="Your email address"
-                      required
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#097969] focus:ring-1 focus:ring-[#097969]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-2">
-                      Preferred Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#097969] focus:ring-1 focus:ring-[#097969]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-2">
-                      Purpose <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#097969] focus:ring-1 focus:ring-[#097969]"
-                    >
-                      <option value="">Select a purpose</option>
-                      <option value="career-path">Career Path Planning</option>
-                      <option value="cv-review">CV Review</option>
-                      <option value="interview-prep">Interview Preparation</option>
-                      <option value="job-search">Job Search Strategy</option>
-                      <option value="graduate-opportunities">Graduate Opportunities</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg bg-[#097969] px-5 py-3 text-sm font-semibold text-white hover:bg-[#065f52] transition-colors"
-                  >
-                    Book Appointment
-                  </button>
-                </form>
-              </div>
-            </div>
+            ))}
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* Booking Form Section */}
+      <section id="booking-form" className="py-24 bg-gray-50/50 scroll-mt-20">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="text-[#097969] font-bold tracking-[0.2em] text-xs mb-4 uppercase">Appointment Booking</p>
+            <h2 className="text-4xl md:text-5xl font-black text-[#1a2e4a]">Schedule a Session</h2>
+          </div>
+          
+          <div className="max-w-6xl mx-auto">
+            <BookingForm className="min-h-[600px] shadow-2xl" />
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>
   );
 }
-
-

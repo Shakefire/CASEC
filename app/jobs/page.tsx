@@ -463,7 +463,7 @@ export default function JobsPage() {
 
       {/* Job Detail Modal */}
       {selectedJobData && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-[1000] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 py-6">
             {/* Backdrop */}
             <div

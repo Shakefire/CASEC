@@ -50,8 +50,8 @@ export default function Footer() {
               <li>Ede, Osun State</li>
               <li>+234 (0)703</li>
               <li>
-                <a href="mailto:info@casec.run.edu.ng" className="hover:text-white transition">
-                  info@casec.run.edu.ng
+                <a href="mailto:info@utrust.com.ng" className="hover:text-white transition">
+                  info@utrust.com.ng
                 </a>
               </li>
             </ul>

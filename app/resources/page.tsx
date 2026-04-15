@@ -29,6 +29,7 @@ interface ResourceItem {
   description?: string;
   downloads?: number;
   featured?: boolean;
+  external_url?: string;
 }
 
 interface VideoItem {
@@ -86,9 +87,18 @@ export default function ResourcesPage() {
           setError("Failed to load documents.");
         } else if (resData) {
           setResources(resData.map((r: any) => ({
-            id: r.id, title: r.title, fileName: r.file_name, fileSize: r.file_size,
-            uploadedAt: r.uploaded_at, uploadedBy: r.uploaded_by, category: r.category,
-            type: r.type, description: r.description, downloads: r.downloads, featured: r.featured,
+            id: r.id, 
+            title: r.title, 
+            fileName: r.file_name, 
+            fileSize: r.file_size,
+            uploadedAt: new Date(r.uploaded_at).toLocaleDateString(), 
+            uploadedBy: r.uploaded_by, 
+            category: r.category,
+            type: r.type, 
+            description: r.description, 
+            downloads: r.downloads, 
+            featured: r.featured,
+            external_url: r.external_url
           })));
         }
 
@@ -384,13 +394,20 @@ export default function ResourcesPage() {
 
                       {/* Actions */}
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => setSelectedResource(resource)}
+                        <a
+                          href={resource.external_url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => {
+                            if (resource.id) {
+                              supabase.rpc('increment_downloads', { resource_id: resource.id });
+                            }
+                          }}
                           className="flex-1 bg-[#097969] text-white py-2 rounded-lg hover:bg-[#065f52] font-medium flex items-center justify-center gap-2"
                         >
                           <Download className="h-4 w-4" />
-                          Download
-                        </button>
+                          {resource.type === "pdf" ? "Download" : "Open Link"}
+                        </a>
                         <button
                           onClick={() => toggleSaveResource(resource.id)}
                           className={`px-4 py-2 rounded-lg border transition-colors ${

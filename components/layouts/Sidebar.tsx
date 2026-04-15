@@ -42,6 +42,7 @@ const adminNavItems: NavItem[] = [
 
 const employerNavItems: NavItem[] = [
   { label: "Overview", path: "/employer", icon: <LayoutDashboard size={18} /> },
+  { label: "Appointments", path: "/employer/appointments", icon: <CalendarCheck size={18} /> },
   { label: "Post Opportunity", path: "/employer/post", icon: <FileText size={18} /> },
   { label: "My Opportunities", path: "/employer/opportunities", icon: <Briefcase size={18} /> },
   { label: "Applications", path: "/employer/applications", icon: <ClipboardList size={18} /> },
@@ -50,26 +51,28 @@ const employerNavItems: NavItem[] = [
 
 const studentNavItems: NavItem[] = [
   { label: "Dashboard", path: "/student", icon: <LayoutDashboard size={18} /> },
+  { label: "Appointments", path: "/student/appointments", icon: <CalendarCheck size={18} /> },
   { label: "Find Jobs", path: "/student/jobs", icon: <Briefcase size={18} /> },
   { label: "My Applications", path: "/student/applications", icon: <ClipboardList size={18} /> },
   { label: "Events", path: "/student/events", icon: <CalendarDays size={18} /> },
   { label: "Resources", path: "/student/resources", icon: <FolderOpen size={18} /> },
+  { label: "RUN-LAS Forms", path: "/student/runlas", icon: <ClipboardList size={18} /> },
   { label: "My Profile", path: "/student/profile", icon: <Users size={18} /> },
 ];
 
 export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  
-  const navItems = role === "admin" 
-    ? adminNavItems 
-    : role === "employer" 
-      ? employerNavItems 
+
+  const navItems = role === "admin"
+    ? adminNavItems
+    : role === "employer"
+      ? employerNavItems
       : studentNavItems;
 
-  const portalTitle = role === "admin" 
-    ? "Admin Portal" 
-    : role === "employer" 
-      ? "Employer Portal" 
+  const portalTitle = role === "admin"
+    ? "Admin Portal"
+    : role === "employer"
+      ? "Employer Portal"
       : "Student Portal";
 
   return (
@@ -135,11 +138,10 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
                   <Link
                     href={item.path}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors ${
-                      isActive
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors ${isActive
                         ? "bg-white/15 text-white font-medium"
                         : "text-white/70 hover:bg-white/8 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <span className="flex-shrink-0">{item.icon}</span>
                     {item.label}
@@ -153,7 +155,7 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         {/* Footer */}
         <div className="px-5 py-4 border-t border-white/10">
           <a
-            href="https://casec.run.edu.ng"
+            href="https://utrust.com.ng"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-white/40 hover:text-white/70 transition-colors"

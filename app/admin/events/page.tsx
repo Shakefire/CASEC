@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import Table from "@/components/ui/Table";
 import Modal from "@/components/ui/Modal";
@@ -8,6 +8,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { FormField, Input, Select, Textarea } from "@/components/ui/FormField";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { supabase } from "@/lib/supabase";
+import { useEventsManagement } from "@/lib/hooks/useDashboard";
 
 interface Event {
   id: string;
@@ -46,32 +47,13 @@ const emptyForm: EventForm = {
 };
 
 export default function AdminEventsPage() {
-  const [data, setData] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: events = [], isLoading: loading, refetch } = useEventsManagement();
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Event | null>(null);
   const [form, setForm] = useState<EventForm>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
   const [errors, setErrors] = useState<Partial<EventForm>>({});
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  async function fetchEvents() {
-    setLoading(true);
-    const { data: evts, error } = await supabase
-      .from("events")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("❌ EVENTS FETCH ERROR: " + (error.message || error));
-    } else {
-      setData(evts || []);
-    }
-    setLoading(false);
-  }
 
   function openAdd() {
     setEditTarget(null);
@@ -121,233 +103,75 @@ export default function AdminEventsPage() {
       status: "upcoming",
     };
 
-    if (editTarget) {
-      const { error } = await supabase
-        .from("events")
-        .update(eventData)
-        .eq("id", editTarget.id);
-
-      if (error) {
-        alert("Failed to update event: " + error.message);
+    try {
+      if (editTarget) {
+        const { error } = await supabase.from("events").update(eventData).eq("id", editTarget.id);
+        if (error) throw error;
       } else {
-        fetchEvents();
-        setModalOpen(false);
+        const { error } = await supabase.from("events").insert([eventData]);
+        if (error) throw error;
       }
-    } else {
-      const { error } = await supabase
-        .from("events")
-        .insert([eventData]);
-
-      if (error) {
-        alert("Failed to create event: " + error.message);
-      } else {
-        fetchEvents();
-        setModalOpen(false);
-      }
+      await refetch();
+      setModalOpen(false);
+    } catch (err: any) {
+      alert("Error: " + err.message);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", deleteTarget.id);
-
+    const { error } = await supabase.from("events").delete().eq("id", deleteTarget.id);
     if (error) {
       alert("Failed to delete event: " + error.message);
     } else {
-      fetchEvents();
+      await refetch();
       setDeleteTarget(null);
     }
   }
 
   const columns = [
-    {
-      key: "title",
-      header: "Title",
-      render: (row: Event) => (
-        <span className="font-medium text-gray-800">{row.title}</span>
-      ),
-    },
-    {
-      key: "date",
-      header: "Date",
-      render: (row: Event) => (
-        <span className="text-gray-600">{new Date(row.date).toLocaleDateString()}</span>
-      ),
-    },
-    {
-      key: "location",
-      header: "Location",
-      render: (row: Event) => (
-        <span className="text-gray-600">{row.location}</span>
-      ),
-    },
-    {
-      key: "category",
-      header: "Category",
-      render: (row: Event) => <StatusBadge status={row.category} />,
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (row: Event) => <StatusBadge status={row.status} />,
-    },
+    { key: "title", header: "Title", render: (row: Event) => <span className="font-medium text-gray-800">{row.title}</span> },
+    { key: "date", header: "Date", render: (row: Event) => <span className="text-gray-600">{new Date(row.date).toLocaleDateString()}</span> },
+    { key: "location", header: "Location", render: (row: Event) => <span className="text-gray-600">{row.location}</span> },
+    { key: "category", header: "Category", render: (row: Event) => <StatusBadge status={row.category} /> },
+    { key: "status", header: "Status", render: (row: Event) => <StatusBadge status={row.status} /> },
     {
       key: "actions",
       header: "Actions",
       render: (row: Event) => (
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => openEdit(row)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Pencil size={13} /> Edit
-          </button>
-          <button
-            onClick={() => setDeleteTarget(row)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-red-200 rounded text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 size={13} /> Delete
-          </button>
+          <button onClick={() => openEdit(row)} className="p-1 text-gray-400 hover:text-blue-600"><Pencil size={16} /></button>
+          <button onClick={() => setDeleteTarget(row)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Events</h2>
-          <p className="text-sm text-gray-500">{data.length} total events in database</p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#1a2e4a] text-white text-sm rounded hover:bg-[#14253d] transition-colors"
-        >
-          <Plus size={16} /> Add Event
-        </button>
+        <h1 className="text-xl font-bold text-gray-800">Events Management</h1>
+        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-[#1a2e4a] text-white rounded hover:bg-[#122035]"><Plus size={18} /> Add Event</button>
       </div>
 
-      <Table<Event>
-        columns={columns}
-        data={data}
-        loading={loading}
-        emptyMessage="No events found in Supabase. Click 'Add Event' to get started."
-      />
+      <Table data={events} columns={columns} loading={loading} />
 
-      {/* Add / Edit Modal */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editTarget ? "Edit Event" : "Add New Event"}
-      >
-        <FormField label="Title" required error={errors.title}>
-          <Input
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="e.g. Career Fair 2025"
-            hasError={!!errors.title}
-          />
-        </FormField>
-        <FormField label="Description" required error={errors.description}>
-          <Textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-            placeholder="Describe the event..."
-            hasError={!!errors.description}
-          />
-        </FormField>
-        <FormField label="Date" required error={errors.date}>
-          <Input
-            type="date"
-            value={form.date}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, date: e.target.value }))
-            }
-            hasError={!!errors.date}
-          />
-        </FormField>
-        <FormField label="Location" required error={errors.location}>
-          <Input
-            value={form.location}
-            onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-            placeholder="e.g. RUN Main Hall, Ede"
-            hasError={!!errors.location}
-          />
-        </FormField>
-        <FormField label="Category" required>
-          <Select
-            value={form.category}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, category: e.target.value }))
-            }
-          >
-            <option value="Workshop">Workshop</option>
-            <option value="Networking">Networking</option>
-            <option value="Training">Training</option>
-            <option value="Career Fair">Career Fair</option>
-          </Select>
-        </FormField>
-        <FormField label="Event Type" required>
-          <Select
-            value={form.event_type}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, event_type: e.target.value }))
-            }
-          >
-            <option value="full-day">Full Day</option>
-            <option value="half-day">Half Day</option>
-            <option value="evening">Evening</option>
-            <option value="webinar">Webinar</option>
-          </Select>
-        </FormField>
-        <FormField label="Capacity">
-          <Input
-            type="number"
-            value={form.capacity}
-            onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
-            placeholder="e.g. 100"
-          />
-        </FormField>
-        <FormField label="Organizer">
-          <Input
-            value={form.organizer}
-            onChange={(e) => setForm((f) => ({ ...f, organizer: e.target.value }))}
-            placeholder="e.g. Career Services Centre"
-          />
-        </FormField>
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <button
-            onClick={() => setModalOpen(false)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm bg-[#1a2e4a] text-white rounded hover:bg-[#14253d] transition-colors"
-          >
-            {editTarget ? "Save Changes" : "Add Event"}
-          </button>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? "Edit Event" : "Add New Event"}>
+        <div className="space-y-4">
+          <FormField label="Title" error={errors.title}><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></FormField>
+          <FormField label="Description" error={errors.description}><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></FormField>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Date" error={errors.date}><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></FormField>
+            <FormField label="Location" error={errors.location}><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></FormField>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-gray-600">Cancel</button>
+            <button onClick={handleSubmit} className="px-4 py-2 bg-[#1a2e4a] text-white rounded">Save Event</button>
+          </div>
         </div>
       </Modal>
 
-      {/* Delete Confirm */}
-      <ConfirmDialog
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Delete Event"
-        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        danger
-      />
+      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Event" message={`Delete "${deleteTarget?.title}"?`} />
     </div>
   );
 }

@@ -24,6 +24,7 @@ export interface Event {
   description: string;
   location: string;
   createdAt: string;
+  image_url?: string;
   category?: string;
   eventType?: "full-day" | "half-day" | "evening" | "webinar";
   capacity?: number;
@@ -609,7 +610,7 @@ export const users: User[] = [
   {
     id: "usr-001",
     name: "Adaeze Okonkwo",
-    email: "adaeze.okonkwo@run.edu.ng",
+    email: "adaeze.okonkwo@utrust.com.ng",
     role: "student",
     status: "active",
     joinedAt: "2024-09-01",
@@ -626,7 +627,7 @@ export const users: User[] = [
   {
     id: "usr-002",
     name: "Emeka Nwosu",
-    email: "emeka.nwosu@run.edu.ng",
+    email: "emeka.nwosu@utrust.com.ng",
     role: "student",
     status: "active",
     joinedAt: "2024-09-01",
@@ -635,7 +636,7 @@ export const users: User[] = [
   {
     id: "usr-003",
     name: "Fatima Yusuf",
-    email: "fatima.yusuf@run.edu.ng",
+    email: "fatima.yusuf@utrust.com.ng",
     role: "student",
     status: "inactive",
     joinedAt: "2024-09-01",
@@ -668,7 +669,7 @@ export const users: User[] = [
   {
     id: "usr-004",
     name: "Chioma Obiora",
-    email: "chioma.obiora@run.edu.ng",
+    email: "chioma.obiora@utrust.com.ng",
     role: "student",
     status: "active",
     joinedAt: "2024-09-01",
@@ -690,7 +691,7 @@ export const applications: Application[] = [
     opportunityId: "opp-001",
     opportunityTitle: "Graduate Software Engineer",
     applicantName: "Adaeze Okonkwo",
-    applicantEmail: "adaeze.okonkwo@run.edu.ng",
+    applicantEmail: "adaeze.okonkwo@utrust.com.ng",
     cvFileName: "adaeze-okonkwo-cv.pdf",
     status: "shortlisted",
     appliedAt: "2025-06-10",
@@ -700,7 +701,7 @@ export const applications: Application[] = [
     opportunityId: "opp-001",
     opportunityTitle: "Graduate Software Engineer",
     applicantName: "Emeka Nwosu",
-    applicantEmail: "emeka.nwosu@run.edu.ng",
+    applicantEmail: "emeka.nwosu@utrust.com.ng",
     cvFileName: "emeka-nwosu-cv.pdf",
     status: "pending",
     appliedAt: "2025-06-12",
@@ -710,7 +711,7 @@ export const applications: Application[] = [
     opportunityId: "opp-003",
     opportunityTitle: "Summer Internship – Finance Analyst",
     applicantName: "Chioma Obiora",
-    applicantEmail: "chioma.obiora@run.edu.ng",
+    applicantEmail: "chioma.obiora@utrust.com.ng",
     cvFileName: "chioma-obiora-cv.pdf",
     status: "pending",
     appliedAt: "2025-06-14",

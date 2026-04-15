@@ -9,7 +9,7 @@ export default function AdminLayout({
     <DashboardLayout
       role="admin"
       pageTitle="Admin Portal"
-      pageSubtitle="Career Services Centre – Redeemer's University"
+      pageSubtitle="Career Services Centre – Nigeria University"
       userName="Administrator"
     >
       {children}

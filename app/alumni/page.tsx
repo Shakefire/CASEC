@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Search, Filter, MapPin, Briefcase, GraduationCap, Users, Trophy, Handshake, Globe, Star, MessageCircle, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
+import BookingForm from "@/components/forms/BookingForm";
+import { Search, Filter, MapPin, Briefcase, GraduationCap, Users, Trophy, Handshake, Globe, Star, MessageCircle, Calendar, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react";
 
 // Mock data for alumni
 const alumniData = [
@@ -377,84 +378,6 @@ export default function AlumniPage() {
                 </div>
               ))}
             </div>
-
-            {/* Book an Appointment Section */}
-            <div className="bg-gradient-to-br from-[#097969] to-[#065f52] rounded-xl p-8 text-white">
-              <div className="max-w-2xl mx-auto text-center">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Calendar className="h-6 w-6" />
-                  <h2 className="text-2xl font-bold">Book an Appointment</h2>
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Schedule a Career Counselling Session</h3>
-                <p className="text-emerald-100 mb-8 leading-relaxed">
-                  Book a one-on-one career counselling session with our advisors. We are here to help you map out your career path,
-                  review your CV, prepare for interviews, or explore graduate opportunities.
-                </p>
-
-                <form className="space-y-6 text-left">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Full Name <span className="text-red-300">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Your full name"
-                        required
-                        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/70 focus:border-white focus:ring-2 focus:ring-white/30 outline-none backdrop-blur-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Email Address <span className="text-red-300">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="Your email address"
-                        required
-                        className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/70 focus:border-white focus:ring-2 focus:ring-white/30 outline-none backdrop-blur-sm"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Preferred Date <span className="text-red-300">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/70 focus:border-white focus:ring-2 focus:ring-white/30 outline-none backdrop-blur-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Purpose <span className="text-red-300">*</span>
-                    </label>
-                    <select
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/70 focus:border-white focus:ring-2 focus:ring-white/30 outline-none backdrop-blur-sm"
-                    >
-                      <option value="" className="text-gray-900">Select a purpose</option>
-                      <option value="career-path" className="text-gray-900">Career Path Planning</option>
-                      <option value="cv-review" className="text-gray-900">CV Review</option>
-                      <option value="interview-prep" className="text-gray-900">Interview Preparation</option>
-                      <option value="job-search" className="text-gray-900">Job Search Strategy</option>
-                      <option value="graduate-opportunities" className="text-gray-900">Graduate Opportunities</option>
-                      <option value="mentorship" className="text-gray-900">Mentorship Guidance</option>
-                      <option value="other" className="text-gray-900">Other</option>
-                    </select>
-                  </div>
-                  <div className="text-center pt-4">
-                    <button
-                      type="submit"
-                      className="bg-white text-[#097969] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl"
-                    >
-                      Book Appointment
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
           </div>
         )}
 
@@ -582,6 +505,14 @@ export default function AlumniPage() {
             </div>
           </div>
         )}
+        {/* Booking Form Section */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Book an Alumni Counselling Session</h2>
+            <p className="text-gray-600">Get guidance from our career experts tailored for graduates.</p>
+          </div>
+          <BookingForm className="max-w-4xl mx-auto" />
+        </div>
       </main>
 
       <Footer />

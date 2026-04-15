@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Download, Star } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Pencil, Trash2, Star, Upload, FileText, Loader2, Link as LinkIcon } from "lucide-react";
 import Table from "@/components/ui/Table";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { FormField, Input, Select, Textarea } from "@/components/ui/FormField";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { supabase } from "@/lib/supabase";
+import { useResourcesManagement, useResourceMutation, useResourceDelete, useResourceUpload } from "@/lib/hooks/useDashboard";
+import { useAuth } from "@/lib/auth";
 
 interface Resource {
   id: string;
@@ -21,6 +22,7 @@ interface Resource {
   description: string;
   downloads: number;
   featured: boolean;
+  external_url?: string;
 }
 
 interface ResourceForm {
@@ -31,45 +33,33 @@ interface ResourceForm {
   type: string;
   description: string;
   featured: boolean;
+  external_url?: string;
 }
 
 const emptyForm: ResourceForm = {
   title: "",
   file_name: "",
   file_size: "",
-  category: "",
-  type: "",
+  category: "Career Guide",
+  type: "pdf",
   description: "",
   featured: false,
+  external_url: "",
 };
 
 export default function AdminResourcesPage() {
-  const [data, setData] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { data: resources = [], isLoading: loading, refetch } = useResourcesManagement();
+  const resourceMutation = useResourceMutation();
+  const resourceDelete = useResourceDelete();
+  const resourceUpload = useResourceUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Resource | null>(null);
   const [form, setForm] = useState<ResourceForm>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<Resource | null>(null);
   const [errors, setErrors] = useState<Partial<ResourceForm>>({});
-
-  useEffect(() => {
-    fetchResources();
-  }, []);
-
-  async function fetchResources() {
-    setLoading(true);
-    const { data: res, error } = await supabase
-      .from("resources")
-      .select("*")
-      .order("uploaded_at", { ascending: false });
-
-    if (error) {
-      console.error("❌ RESOURCES FETCH ERROR: " + (error.message || error));
-    } else {
-      setData(res || []);
-    }
-    setLoading(false);
-  }
 
   function openAdd() {
     setEditTarget(null);
@@ -88,6 +78,7 @@ export default function AdminResourcesPage() {
       type: res.type,
       description: res.description,
       featured: res.featured,
+      external_url: res.external_url || "",
     });
     setErrors({});
     setModalOpen(true);
@@ -96,249 +87,101 @@ export default function AdminResourcesPage() {
   function validate() {
     const e: Partial<ResourceForm> = {};
     if (!form.title.trim()) e.title = "Title is required.";
-    if (!form.file_name.trim()) e.file_name = "File name is required.";
+    if (form.type === "pdf" && !form.external_url) e.external_url = "PDF file is required.";
+    if (form.type === "link" && !form.external_url) e.external_url = "External URL is required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const result = await resourceUpload.mutateAsync(file);
+      setForm(prev => ({
+        ...prev,
+        external_url: result.url,
+        file_name: result.name,
+        file_size: result.size
+      }));
+    } catch (err: any) {
+      alert("Upload failed: " + err.message);
+    }
+  }
+
   async function handleSubmit() {
     if (!validate()) return;
-
-    const resourceData = {
-      title: form.title,
-      file_name: form.file_name,
-      file_size: form.file_size,
-      category: form.category,
-      type: form.type,
-      description: form.description,
-      featured: form.featured,
-    };
-
-    if (editTarget) {
-      const { error } = await supabase
-        .from("resources")
-        .update(resourceData)
-        .eq("id", editTarget.id);
-
-      if (error) {
-        alert("Failed to update resource: " + error.message);
-      } else {
-        fetchResources();
-        setModalOpen(false);
-      }
-    } else {
-      const { error } = await supabase
-        .from("resources")
-        .insert([resourceData]);
-
-      if (error) {
-        alert("Failed to create resource: " + error.message);
-      } else {
-        fetchResources();
-        setModalOpen(false);
-      }
+    try {
+      await resourceMutation.mutateAsync({
+        id: editTarget?.id,
+        ...form,
+        uploaded_by: user?.id,
+        file_name: form.file_name || (form.type === "link" ? "External Link" : "Resource"),
+      });
+      await refetch();
+      setModalOpen(false);
+    } catch (err: any) {
+      alert("Error: " + err.message);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-
-    const { error } = await supabase
-      .from("resources")
-      .delete()
-      .eq("id", deleteTarget.id);
-
-    if (error) {
-      alert("Failed to delete resource: " + error.message);
-    } else {
-      fetchResources();
+    try {
+      await resourceDelete.mutateAsync(deleteTarget.id);
+      await refetch();
       setDeleteTarget(null);
-    }
-  }
-
-  async function toggleFeatured(id: string, current: boolean) {
-    const { error } = await supabase
-      .from("resources")
-      .update({ featured: !current })
-      .eq("id", id);
-
-    if (error) {
-      alert("Failed to update featured status: " + error.message);
-    } else {
-      fetchResources();
+    } catch (err: any) {
+      alert("Delete failed: " + err.message);
     }
   }
 
   const columns = [
-    {
-      key: "title",
-      header: "Title",
-      render: (row: Resource) => (
-        <div>
-          <span className="font-medium text-gray-800">{row.title}</span>
-          {row.featured && <Star size={14} className="inline ml-1 text-yellow-500 fill-current" />}
-        </div>
-      ),
-    },
-    {
-      key: "file_name",
-      header: "File Name",
-      render: (row: Resource) => (
-        <span className="text-gray-600 font-mono text-sm">{row.file_name}</span>
-      ),
-    },
-    {
-      key: "category",
-      header: "Category",
-      render: (row: Resource) => <StatusBadge status={row.category || "General"} />,
-    },
-    {
-      key: "downloads",
-      header: "Downloads",
-      render: (row: Resource) => (
-        <span className="text-gray-600">{row.downloads}</span>
-      ),
-    },
+    { key: "title", header: "Title", render: (row: Resource) => <span>{row.title}</span> },
+    { key: "category", header: "Category", render: (row: Resource) => <StatusBadge status={row.category} /> },
+    { key: "type", header: "Type", render: (row: Resource) => <span>{row.type}</span> },
     {
       key: "actions",
       header: "Actions",
       render: (row: Resource) => (
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => toggleFeatured(row.id, row.featured)}
-            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border rounded transition-colors ${
-              row.featured
-                ? "border-yellow-200 text-yellow-600 hover:bg-yellow-50"
-                : "border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <Star size={13} className={row.featured ? "fill-current" : ""} /> {row.featured ? "Unfeature" : "Feature"}
-          </button>
-          <button
-            onClick={() => openEdit(row)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Pencil size={13} /> Edit
-          </button>
-          <button
-            onClick={() => setDeleteTarget(row)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 border border-red-200 rounded text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 size={13} /> Delete
-          </button>
+          <button onClick={() => openEdit(row)} className="p-1 text-gray-400 hover:text-blue-600"><Pencil size={16} /></button>
+          <button onClick={() => setDeleteTarget(row)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Resources</h2>
-          <p className="text-sm text-gray-500">{data.length} total resources in database</p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#1a2e4a] text-white text-sm rounded hover:bg-[#14253d] transition-colors"
-        >
-          <Plus size={16} /> Add Resource
-        </button>
+        <h1 className="text-xl font-bold text-gray-800">Resource Library</h1>
+        <button onClick={openAdd} className="bg-[#1a2e4a] text-white px-4 py-2 rounded flex items-center gap-2"><Plus size={18} /> Add Resource</button>
       </div>
 
-      <Table<Resource>
-        columns={columns}
-        data={data}
-        loading={loading}
-        emptyMessage="No resources found in Supabase. Click 'Add Resource' to get started."
-      />
+      <Table data={resources} columns={columns} loading={loading} />
 
-      {/* Add / Edit Modal */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editTarget ? "Edit Resource" : "Add New Resource"}
-      >
-        <FormField label="Title" required error={errors.title}>
-          <Input
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="e.g. CV Writing Guide"
-            hasError={!!errors.title}
-          />
-        </FormField>
-        <FormField label="File Name" required error={errors.file_name}>
-          <Input
-            value={form.file_name}
-            onChange={(e) => setForm((f) => ({ ...f, file_name: e.target.value }))}
-            placeholder="e.g. cv-guide.pdf"
-            hasError={!!errors.file_name}
-          />
-        </FormField>
-        <FormField label="File Size">
-          <Input
-            value={form.file_size}
-            onChange={(e) => setForm((f) => ({ ...f, file_size: e.target.value }))}
-            placeholder="e.g. 2.5 MB"
-          />
-        </FormField>
-        <FormField label="Category">
-          <Input
-            value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            placeholder="e.g. Career Development"
-          />
-        </FormField>
-        <FormField label="Type">
-          <Input
-            value={form.type}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-            placeholder="e.g. PDF, Video, Document"
-          />
-        </FormField>
-        <FormField label="Description">
-          <Textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-            placeholder="Describe the resource..."
-          />
-        </FormField>
-        <FormField label="Featured">
-          <input
-            type="checkbox"
-            checked={form.featured}
-            onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
-            className="rounded border-gray-300"
-          />
-        </FormField>
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <button
-            onClick={() => setModalOpen(false)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm bg-[#1a2e4a] text-white rounded hover:bg-[#14253d] transition-colors"
-          >
-            {editTarget ? "Save Changes" : "Add Resource"}
-          </button>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? "Edit Resource" : "Add New Resource"}>
+        <div className="space-y-4">
+          <FormField label="Title" error={errors.title}><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></FormField>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Category"><Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}><option value="Career Guide">Career Guide</option><option value="CV Template">CV Template</option></Select></FormField>
+            <FormField label="Type"><Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="pdf">PDF Document</option><option value="link">External Link</option></Select></FormField>
+          </div>
+          {form.type === "pdf" ? (
+             <button onClick={() => fileInputRef.current?.click()} className="w-full border-2 border-dashed p-8 rounded-xl hover:bg-gray-50">{form.file_name || "Upload PDF"}</button>
+          ) : (
+            <FormField label="URL"><Input value={form.external_url} onChange={(e) => setForm({ ...form, external_url: e.target.value })} /></FormField>
+          )}
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf" />
+          <div className="flex justify-end gap-3 pt-6">
+            <button onClick={() => setModalOpen(false)} className="px-4 py-2">Cancel</button>
+            <button onClick={handleSubmit} disabled={resourceMutation.isPending} className="bg-[#1a2e4a] text-white px-6 py-2 rounded">Save Resource</button>
+          </div>
         </div>
       </Modal>
 
-      {/* Delete Confirm */}
-      <ConfirmDialog
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Delete Resource"
-        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        danger
-      />
+      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete Resource" message={`Delete "${deleteTarget?.title}"?`} />
     </div>
   );
 }

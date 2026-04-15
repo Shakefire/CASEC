@@ -1,24 +1,47 @@
-import { Opportunity } from "@/lib/data";
+import { MapPin, Building2, Calendar, ArrowUpRight } from "lucide-react";
 
 interface JobCardProps {
-  opportunity: Opportunity;
+  opportunity: any;
+  onClick?: () => void;
 }
 
-export default function JobCard({ opportunity }: JobCardProps) {
+export default function JobCard({ opportunity, onClick }: JobCardProps) {
   return (
-    <a
-      href="#"
-      className="block rounded-xl border border-slate-200 bg-white p-5 transition hover:shadow-lg"
+    <div 
+      onClick={onClick}
+      className="bg-white border border-gray-100 rounded-xl p-5 hover:border-[#097969]/30 hover:shadow-lg transition-all group cursor-pointer relative overflow-hidden"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-[#097969] font-semibold">{opportunity.type}</p>
-          <h3 className="mt-2 text-lg font-semibold text-slate-900">{opportunity.title}</h3>
-        </div>
-        <div className="text-sm text-slate-500">Deadline: {opportunity.deadline}</div>
+      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <ArrowUpRight size={18} className="text-[#097969]" />
       </div>
-      <p className="mt-4 text-sm leading-6 text-slate-600">{opportunity.description}</p>
-      <div className="mt-4 text-xs text-slate-500">Posted: {opportunity.createdAt}</div>
-    </a>
+
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-[#097969]/5 flex items-center justify-center text-[#097969] group-hover:bg-[#097969] group-hover:text-white transition-all">
+          <Building2 size={24} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-gray-900 group-hover:text-[#097969] transition-colors truncate">
+            {opportunity.title}
+          </h3>
+          <p className="text-sm font-semibold text-[#097969]/80 mb-2 truncate">
+            {opportunity.postedByName || "Confidential Company"}
+          </p>
+          
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-medium">
+            {opportunity.location && (
+              <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
+                <MapPin size={12} /> {opportunity.location}
+              </span>
+            )}
+            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded capitalize">
+              {opportunity.type}
+            </span>
+            <span className="flex items-center gap-1 text-gray-400">
+              <Calendar size={12} /> {new Date(opportunity.deadline).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
